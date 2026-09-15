@@ -157,6 +157,12 @@
   .img-thumb{ position:relative; width:70px; height:70px; }
   .img-thumb img{ width:100%; height:100%; object-fit:cover; border-radius:4px; border:1px solid var(--line-soft); }
   .img-thumb button{ position:absolute; top:-6px; right:-6px; background:var(--red); border-radius:50%; width:18px; height:18px; border:none; color:#fff; cursor:pointer; font-size:11px; line-height:1; }
+  .folder-card{
+    background:var(--panel); border:1px solid var(--line-soft); border-radius:6px; padding:16px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;
+  }
+  .folder-card:hover{ border-color:var(--gold-dim); }
+  .folder-card .folder-title{ font-family:'Cinzel',serif; font-size:15px; color:var(--gold-bright); display:flex; align-items:center; gap:8px; }
   #lightbox{ position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:120; display:flex; align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
   #lightbox img{ max-width:92vw; max-height:92vh; border-radius:4px; }
 </style>
@@ -261,9 +267,13 @@
   <div class="cat-tabs" id="cat-tabs"></div>
 
   <div class="board-head">
-    <div class="board-title" id="board-title"></div>
+    <div class="board-title" id="board-title" style="display:flex;align-items:center;gap:10px;">
+      <button class="icon-btn hidden" id="folder-back-btn" style="color:var(--gold-bright);font-size:16px;">&#8592;</button>
+      <span id="board-title-text"></span>
+    </div>
     <button class="btn btn-solid" id="add-entry-btn">+ Neuer Eintrag</button>
   </div>
+  <div class="entries-grid" id="folders-grid"></div>
   <div class="entries-grid" id="entries-grid"></div>
 </div>
 
@@ -282,6 +292,22 @@
   </div>
 </div>
 
+<!-- ADD FOLDER MODAL -->
+<div id="add-folder-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-head">
+      <div class="modal-title">Neuer Ordner</div>
+      <button class="icon-btn" id="add-folder-close">&#10005;</button>
+    </div>
+    <form id="form-add-folder">
+      <label class="field"><div class="field-label">ÜBERSCHRIFT</div>
+        <input type="text" id="folder-title" placeholder="z.B. Weed" />
+      </label>
+      <button type="submit" class="btn btn-solid btn-full">Ordner erstellen</button>
+    </form>
+  </div>
+</div>
+
 <!-- ADD ENTRY MODAL -->
 <div id="add-entry-modal" class="modal-overlay hidden">
   <div class="modal-box" style="max-width:440px;">
@@ -294,7 +320,7 @@
         <textarea id="entry-text" rows="4" placeholder="Details eintragen..."></textarea>
       </label>
       <div style="margin-bottom:14px;">
-        <div class="field-label">SCREENSHOTS (max. 3)</div>
+        <div class="field-label" id="entry-images-label">SCREENSHOTS (max. 3)</div>
         <div id="entry-images" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
         <input type="file" id="entry-file-input" accept="image/*" multiple hidden />
       </div>
