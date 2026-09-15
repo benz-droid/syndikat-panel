@@ -19,7 +19,11 @@ let currentUser = null; // icName of logged in user
 let adminUnlocked = false;
 let activeCategory = CATEGORIES[0].key;
 let entriesUnsub = null;
+let foldersUnsub = null;
+let activeFolder = null; // {id, name} when inside a Routen & Orte folder
 let entryImages = []; // staged base64 images for "add entry" modal
+let currentMaxImages = 3;
+let funkMasked = false; // local-only: hides the funk value from view
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => $(id).classList.remove("hidden");
@@ -330,9 +334,10 @@ $("bio-save").onclick = async () => {
 };
 
 function renderFunk() {
-  $("funk-display").textContent = funkState.value || "—";
+  $("funk-display").textContent = funkMasked ? "•••" : (funkState.value || "—");
   const canFunk = !!me().rights?.funk || !!me().rights?.admin;
   $("funk-edit-btn").classList.toggle("hidden", !(currentUser && canFunk));
+  $("tarnen-btn").textContent = funkMasked ? "SICHTBAR" : "TARNEN";
 }
 $("funk-edit-btn").onclick = () => {
   $("funk-input").value = funkState.value || "";
@@ -350,10 +355,9 @@ $("funk-save-btn").onclick = async () => {
   show("funk-display"); show("funk-edit-btn");
 };
 
-$("tarnen-btn").onclick = async () => {
-  const u = me();
-  await db.collection("users").doc(currentUser).update({ tarnen: !u.tarnen });
-  $("tarnen-btn").textContent = !u.tarnen ? "SICHTBAR" : "TARNEN";
+$("tarnen-btn").onclick = () => {
+  funkMasked = !funkMasked;
+  renderFunk();
 };
 
 /* ---------------- CATEGORY TABS + BOARD ---------------- */
@@ -371,18 +375,100 @@ function buildCategoryTabs() {
 
 function switchCategory(key) {
   activeCategory = key;
+  activeFolder = null;
   document.querySelectorAll(".cat-tab").forEach((b, i) => b.classList.toggle("active", CATEGORIES[i].key === key));
-  $("board-title").textContent = CATEGORIES.find((c) => c.key === key).label;
-  $("entries-grid").innerHTML = '<div class="empty-note">Lade Einträge...</div>';
-  if (entriesUnsub) entriesUnsub();
-  entriesUnsub = db.collection("entries_" + key).orderBy("ts", "desc").onSnapshot((snap) => {
-    const entries = [];
-    snap.forEach((doc) => entries.push({ id: doc.id, ...doc.data() }));
-    renderEntries(entries);
+  if (entriesUnsub) { entriesUnsub(); entriesUnsub = null; }
+  if (foldersUnsub) { foldersUnsub(); foldersUnsub = null; }
+
+  if (key === "routenorte") {
+    showFolderList();
+  } else {
+    hide("folder-back-btn");
+    hide("folders-grid");
+    show("entries-grid");
+    currentMaxImages = 3;
+    $("board-title-text").textContent = CATEGORIES.find((c) => c.key === key).label;
+    $("add-entry-btn").textContent = "+ Neuer Eintrag";
+    $("entries-grid").innerHTML = '<div class="empty-note">Lade Einträge...</div>';
+    entriesUnsub = db.collection("entries_" + key).orderBy("ts", "desc").onSnapshot((snap) => {
+      const entries = [];
+      snap.forEach((doc) => entries.push({ id: doc.id, ...doc.data() }));
+      renderEntries(entries, "entries_" + key);
+    });
+  }
+}
+
+function showFolderList() {
+  activeFolder = null;
+  hide("folder-back-btn");
+  hide("entries-grid");
+  show("folders-grid");
+  $("board-title-text").textContent = "Routen & Orte";
+  $("add-entry-btn").textContent = "+ Neuer Ordner";
+  $("folders-grid").innerHTML = '<div class="empty-note">Lade Ordner...</div>';
+  if (foldersUnsub) foldersUnsub();
+  foldersUnsub = db.collection("routenorte_folders").orderBy("ts", "desc").onSnapshot((snap) => {
+    const folders = [];
+    snap.forEach((doc) => folders.push({ id: doc.id, ...doc.data() }));
+    renderFolders(folders);
   });
 }
 
-function renderEntries(entries) {
+function renderFolders(folders) {
+  const grid = $("folders-grid");
+  grid.innerHTML = "";
+  if (folders.length === 0) {
+    grid.innerHTML = '<div class="empty-note">Noch keine Ordner. Leg mit "+ Neuer Ordner" den ersten an.</div>';
+    return;
+  }
+  const isAdmin = !!me().rights?.admin;
+  folders.forEach((f) => {
+    const card = document.createElement("div");
+    card.className = "folder-card";
+    const canDelete = f.author === currentUser || isAdmin;
+    card.innerHTML = `
+      <div class="folder-title">&#128193; ${escapeHtml(f.name)}</div>
+      ${canDelete ? `<button class="icon-btn" style="color:var(--red-bright);" data-delfolder="${f.id}">&#128465;</button>` : ""}
+    `;
+    card.onclick = (e) => {
+      if (e.target.closest("[data-delfolder]")) return;
+      openFolder(f.id, f.name);
+    };
+    grid.appendChild(card);
+  });
+  grid.querySelectorAll("[data-delfolder]").forEach((btn) => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      const folderId = btn.dataset.delfolder;
+      const entriesSnap = await db.collection("routenorte_entries_" + folderId).get();
+      const batch = db.batch();
+      entriesSnap.forEach((doc) => batch.delete(doc.ref));
+      batch.delete(db.collection("routenorte_folders").doc(folderId));
+      await batch.commit();
+    };
+  });
+}
+
+function openFolder(id, name) {
+  activeFolder = { id, name };
+  if (entriesUnsub) { entriesUnsub(); entriesUnsub = null; }
+  hide("folders-grid");
+  show("entries-grid");
+  show("folder-back-btn");
+  currentMaxImages = 5;
+  $("board-title-text").textContent = name;
+  $("add-entry-btn").textContent = "+ Neuer Eintrag";
+  $("entries-grid").innerHTML = '<div class="empty-note">Lade Einträge...</div>';
+  const coll = "routenorte_entries_" + id;
+  entriesUnsub = db.collection(coll).orderBy("ts", "desc").onSnapshot((snap) => {
+    const entries = [];
+    snap.forEach((doc) => entries.push({ id: doc.id, ...doc.data() }));
+    renderEntries(entries, coll);
+  });
+}
+$("folder-back-btn").onclick = () => showFolderList();
+
+function renderEntries(entries, collectionName) {
   const grid = $("entries-grid");
   grid.innerHTML = "";
   if (entries.length === 0) {
@@ -415,19 +501,33 @@ function renderEntries(entries) {
     img.onclick = () => { $("lightbox-img").src = img.dataset.lightbox; show("lightbox"); };
   });
   grid.querySelectorAll("[data-del]").forEach((btn) => {
-    btn.onclick = () => db.collection("entries_" + activeCategory).doc(btn.dataset.del).delete();
+    btn.onclick = () => db.collection(collectionName).doc(btn.dataset.del).delete();
   });
 }
 $("lightbox").onclick = () => hide("lightbox");
 
-/* ---------------- ADD ENTRY MODAL ---------------- */
+/* ---------------- ADD ENTRY / ADD FOLDER MODALS ---------------- */
 $("add-entry-btn").onclick = () => {
+  if (activeCategory === "routenorte" && !activeFolder) {
+    $("folder-title").value = "";
+    show("add-folder-modal");
+    return;
+  }
   entryImages = [];
   $("entry-text").value = "";
+  $("entry-images-label").textContent = `SCREENSHOTS (max. ${currentMaxImages})`;
   renderEntryImages();
   show("add-entry-modal");
 };
 $("add-entry-close").onclick = () => hide("add-entry-modal");
+$("add-folder-close").onclick = () => hide("add-folder-modal");
+$("form-add-folder").onsubmit = async (e) => {
+  e.preventDefault();
+  const name = $("folder-title").value.trim();
+  if (!name) return;
+  await db.collection("routenorte_folders").add({ name, author: currentUser, ts: Date.now() });
+  hide("add-folder-modal");
+};
 
 function renderEntryImages() {
   const wrap = $("entry-images");
@@ -441,7 +541,7 @@ function renderEntryImages() {
   wrap.querySelectorAll("[data-rm]").forEach((b) => {
     b.onclick = () => { entryImages.splice(Number(b.dataset.rm), 1); renderEntryImages(); };
   });
-  if (entryImages.length < 3) {
+  if (entryImages.length < currentMaxImages) {
     const pick = document.createElement("button");
     pick.type = "button";
     pick.className = "img-pick";
@@ -451,7 +551,7 @@ function renderEntryImages() {
   }
 }
 $("entry-file-input").onchange = async (e) => {
-  const files = Array.from(e.target.files || []).slice(0, 3 - entryImages.length);
+  const files = Array.from(e.target.files || []).slice(0, currentMaxImages - entryImages.length);
   for (const f of files) {
     const compressed = await compressImage(f);
     entryImages.push(compressed);
@@ -463,7 +563,8 @@ $("form-add-entry").onsubmit = async (e) => {
   e.preventDefault();
   const text = $("entry-text").value.trim();
   if (!text && entryImages.length === 0) return;
-  await db.collection("entries_" + activeCategory).add({
+  const targetCollection = activeFolder ? "routenorte_entries_" + activeFolder.id : "entries_" + activeCategory;
+  await db.collection(targetCollection).add({
     text, images: entryImages, author: currentUser, ts: Date.now(),
   });
   hide("add-entry-modal");
