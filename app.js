@@ -1,408 +1,602 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SYNDIKAT · Operations-Netzwerk</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg:#0a0806; --panel:#131009; --panel-soft:#1a1610;
-    --line:#3a2f18; --line-soft:#241d10;
-    --gold:#c9a13b; --gold-bright:#e9c765; --gold-dim:#8a6f2c;
-    --ink:#f1e6c8; --ink-dim:#a89a72; --ink-faint:#6b6046;
-    --red:#a5453b; --red-bright:#c96256;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0; background:var(--bg); color:var(--ink);
-    font-family:'Jost',sans-serif; min-height:100vh;
-  }
-  #screen-login, #screen-waiting, #screen-rejected{
-    position:relative; isolation:isolate;
-    background:linear-gradient(90deg,rgba(5,4,2,.78),rgba(5,4,2,.44)),url('syndikat-login.png') center/cover no-repeat;
-  }
-  #screen-login::before, #screen-waiting::before, #screen-rejected::before{
-    content:""; position:absolute; inset:0; z-index:-1;
-    background:radial-gradient(circle at 50% 30%,transparent 0,rgba(0,0,0,.38) 70%);
-  }
-  #screen-login .card{background:rgba(12,10,6,.94);box-shadow:0 22px 70px rgba(0,0,0,.65);}
-  .login-card{max-width:440px!important;padding:34px 32px!important;position:relative;overflow:hidden;}
-  .login-card::before{content:"";position:absolute;top:0;left:50%;width:160px;height:1px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,var(--gold-bright),transparent);}
-  .brand-crown{font-size:34px;line-height:1;color:var(--gold-bright);filter:drop-shadow(0 3px 8px rgba(201,161,59,.35));}
-  .brand-name{font-size:31px!important;letter-spacing:.13em;text-indent:.13em;text-shadow:0 2px 18px rgba(201,161,59,.24);}
-  .brand-kicker{font-size:10px;letter-spacing:.28em;color:var(--gold);margin-top:8px;text-indent:.28em;}
-  .brand-rule{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--gold-dim);font-size:10px;letter-spacing:.18em;margin:17px 0 19px;}
-  .brand-rule::before,.brand-rule::after{content:"";height:1px;width:60px;background:linear-gradient(90deg,transparent,var(--gold-dim));}.brand-rule::after{transform:scaleX(-1);}
-  .access-notes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:18px 0 4px;}
-  .access-note{font-size:10px;line-height:1.35;text-align:center;color:var(--ink-faint);padding:8px 3px;border-top:1px solid var(--line-soft);}
-  .access-note span{display:block;font-size:15px;margin-bottom:3px;}
-  .login-card input{padding:12px 13px;border-color:#51401e;}.login-card input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,161,59,.10);}
-  .login-card .btn-solid{padding:12px 16px;letter-spacing:.1em;}.login-card .btn-solid:hover{filter:brightness(1.08);transform:translateY(-1px);}
-  .hidden{display:none !important;}
-  .cinzel{font-family:'Cinzel',serif;}
-  a{color:var(--gold);}
+/* ---------------------------------------------------------------
+   Operations-Netzwerk — vanilla JS + Firestore
+----------------------------------------------------------------*/
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-  /* ---------- shared bits ---------- */
-  .centered-screen{
-    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
-  }
-  .card{
-    width:100%; max-width:380px; background:var(--panel);
-    border:1px solid var(--line); border-radius:6px; padding:30px 28px;
-  }
-  .field{display:block; margin-bottom:14px;}
-  .field-label{
-    font-size:11.5px; color:var(--ink-faint); margin-bottom:6px; letter-spacing:.03em;
-  }
-  input[type=text], input[type=password], textarea{
-    width:100%; box-sizing:border-box; background:#0d0b07; border:1px solid var(--line);
-    border-radius:3px; color:var(--ink); padding:10px 12px; font-family:'Jost',sans-serif;
-    font-size:14px; outline:none;
-  }
-  textarea{resize:vertical;}
-  .btn{
-    font-family:'Jost',sans-serif; font-weight:600; font-size:13.5px; letter-spacing:.02em;
-    border-radius:3px; padding:9px 16px; cursor:pointer; display:inline-flex; align-items:center;
-    gap:8px; border:1px solid transparent; transition:all .15s ease; background:none;
-  }
-  .btn-solid{
-    background:linear-gradient(180deg,var(--gold-bright),var(--gold)); color:#1b1508;
-    box-shadow:0 1px 0 rgba(255,255,255,.25) inset;
-  }
-  .btn-outline{ background:transparent; color:var(--gold); border:1px solid var(--line); }
-  .btn-outline:hover{ border-color:var(--gold); }
-  .btn-ghost{ background:var(--panel-soft); color:var(--ink-dim); border:1px solid var(--line-soft); }
-  .btn-ghost:hover{ border-color:var(--gold-dim); }
-  .btn-danger{ background:transparent; color:var(--red-bright); border:1px solid rgba(165,69,59,.35); }
-  .btn:disabled{ opacity:.5; cursor:not-allowed; }
-  .btn-full{ width:100%; justify-content:center; }
-  .icon-btn{ background:none; border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
-  .error-line{
-    font-size:12.5px; color:var(--red-bright); background:rgba(165,69,59,.12);
-    border:1px solid rgba(165,69,59,.35); border-radius:3px; padding:8px 10px; margin-bottom:12px;
-  }
-  .switch-link{ color:var(--gold); cursor:pointer; text-decoration:underline; }
-  .spin{ animation:spin 1s linear infinite; display:inline-block; }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
+const CATEGORIES = [
+  { key: "arbeiter", label: "Arbeiter", icon: "👥" },
+  { key: "fraktionlager", label: "Fraktion & Lager", icon: "🏛️" },
+  { key: "routenorte", label: "Routen & Orte", icon: "📍" },
+  { key: "routenrechner", label: "Routen-Rechner", icon: "🧭" },
+  { key: "waffenshop", label: "Waffen-Shop", icon: "🛡️" },
+];
 
-  /* ---------- crown / modal ---------- */
-  #crown-btn{
-    position:fixed; top:16px; left:16px; z-index:50; width:38px; height:38px; border-radius:50%;
-    background:var(--panel); border:1px solid var(--line); color:var(--gold-dim);
-    display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px;
-  }
-  #crown-btn:hover{ color:var(--gold-bright); border-color:var(--gold); }
-  #admin-notify-btn{position:fixed;top:16px;left:62px;z-index:50;width:38px;height:38px;border-radius:50%;background:var(--panel);border:1px solid var(--gold-dim);color:var(--gold-bright);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;box-shadow:0 6px 18px rgba(0,0,0,.3);}
-  #admin-notify-btn:hover{background:#20190c;border-color:var(--gold-bright);transform:translateY(-1px);}.notify-count{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 4px;border-radius:10px;background:var(--red-bright);border:2px solid var(--bg);color:white;font:700 10px/14px 'Jost',sans-serif;display:flex;align-items:center;justify-content:center;}
-  .modal-overlay{
-    position:fixed; inset:0; background:rgba(4,3,1,.72); z-index:100;
-    display:flex; align-items:center; justify-content:center; padding:16px;
-  }
-  .modal-box{
-    width:100%; max-width:420px; background:var(--panel); border:1px solid var(--line);
-    border-radius:6px; padding:22px; box-shadow:0 20px 60px rgba(0,0,0,.6);
-  }
-  .modal-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-  .modal-title{ font-family:'Cinzel',serif; font-size:17px; color:var(--gold-bright); font-weight:600; }
+let usersMap = {};      // icName -> user data
+let requestsList = [];  // [{icName, password, rang, ts}]
+let funkState = { value: "" };
+let currentUser = null; // icName of logged in user
+let adminUnlocked = false;
+let activeCategory = CATEGORIES[0].key;
+let entriesUnsub = null;
+let foldersUnsub = null;
+let folderTrail = []; // beliebig tiefer Ordnerpfad innerhalb einer Kategorie
+let entryImages = []; // staged base64 images for "add entry" modal
+let currentMaxImages = 3;
+let funkMasked = false; // local-only: hides the funk value from view
 
-  /* ---------- admin panel ---------- */
-  #admin-panel{
-    position:fixed; inset:0; background:var(--bg); z-index:90; overflow-y:auto;
-  }
-  .admin-wrap{ max-width:780px; margin:0 auto; padding:28px 20px 60px; }
-  .admin-hero{position:relative;overflow:hidden;padding:24px 24px 22px;margin-bottom:18px;border:1px solid var(--line);border-radius:9px;background:linear-gradient(115deg,rgba(201,161,59,.14),transparent 42%),linear-gradient(180deg,#171209,#0e0b07);}
-  .admin-hero::after{content:"♛";position:absolute;right:22px;bottom:-18px;font-size:106px;line-height:1;color:rgba(201,161,59,.08);}
-  .admin-eyebrow{font-size:10px;letter-spacing:.23em;color:var(--gold);margin-bottom:7px;}.admin-main-title{font-family:'Cinzel',serif;font-size:25px;color:var(--gold-bright);}.admin-description{position:relative;z-index:1;max-width:470px;font-size:13px;color:var(--ink-dim);line-height:1.55;margin-top:7px;}
-  .admin-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px 0 20px;}.admin-stat{background:var(--panel);border:1px solid var(--line-soft);border-radius:6px;padding:13px 14px;}.admin-stat-number{font-family:'Cinzel',serif;font-size:23px;color:var(--gold-bright);}.admin-stat-label{font-size:10px;letter-spacing:.08em;color:var(--ink-faint);margin-top:3px;}
-  .admin-tabs{ display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
-  .admin-tab{
-    font-family:'Jost',sans-serif; font-size:13px; font-weight:600; padding:8px 14px;
-    border-radius:3px; cursor:pointer; border:1px solid var(--line); background:transparent; color:var(--ink-dim);
-  }
-  .admin-tab.active{ border-color:var(--gold); background:rgba(201,161,59,.12); color:var(--gold-bright); box-shadow:0 5px 18px rgba(0,0,0,.18); }
-  .row-card{
-    background:var(--panel); border:1px solid var(--line-soft); border-radius:5px; padding:12px 14px;
-    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;
-  }
-  .row-card:hover{border-color:var(--gold-dim);}.row-card .btn{font-size:12px;padding:8px 11px;}
-  @media(max-width:520px){.admin-summary{grid-template-columns:1fr;}.admin-hero{padding:20px;}.admin-main-title{font-size:21px;}}
-  .empty-note{ color:var(--ink-faint); font-size:13px; padding:18px 0; text-align:center; }
-  .toggle{ width:30px; height:17px; border-radius:20px; background:#2a2416; position:relative; cursor:pointer; display:inline-block; vertical-align:middle; }
-  .toggle.on{ background:var(--gold); }
-  .toggle-dot{ position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%; background:#8a7e5e; transition:left .15s; }
-  .toggle.on .toggle-dot{ left:15px; background:#1b1508; }
-  .toggle-wrap{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-dim); }
+const $ = (id) => document.getElementById(id);
+const show = (id) => $(id).classList.remove("hidden");
+const hide = (id) => $(id).classList.add("hidden");
 
-  /* ---------- dashboard ---------- */
-  #screen-dashboard{ max-width:980px; margin:0 auto; padding:60px 18px 60px; }
-  .header-card{
-    background:linear-gradient(180deg,var(--panel),var(--panel-soft)); border:1px solid var(--line);
-    border-radius:8px; padding:18px 20px; display:flex; align-items:center; justify-content:space-between;
-    flex-wrap:wrap; gap:14px;
-  }
-  .avatar{
-    border-radius:50%; overflow:hidden; border:1px solid var(--gold-dim); background:#1c1810;
-    display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0;
-  }
-  .avatar img{ width:100%; height:100%; object-fit:cover; }
-  .avatar.editable{ cursor:pointer; }
-  .avatar-hover{
-    position:absolute; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center;
-    opacity:0; transition:opacity .15s; font-size:20px;
-  }
-  .avatar.editable:hover .avatar-hover{ opacity:1; }
-  .rank-badge{
-    font-size:11px; border:1px solid var(--gold-dim); color:var(--gold); border-radius:20px; padding:2px 9px; letter-spacing:.03em;
-  }
-  .admin-badge{
-    font-size:11px; color:var(--red-bright); border:1px solid rgba(165,69,59,.4); border-radius:20px; padding:2px 9px;
-  }
-  .funk-pill{
-    display:flex; align-items:center; gap:8px; background:#0d0b07; border:1px solid var(--line-soft);
-    border-radius:20px; padding:7px 12px;
-  }
-  .cat-tabs{ display:flex; gap:8px; margin-top:22px; flex-wrap:wrap; }
-  .cat-tab{
-    display:flex; align-items:center; gap:7px; padding:9px 14px; border-radius:5px; font-size:13px;
-    font-weight:600; font-family:'Jost',sans-serif; cursor:pointer; border:1px solid var(--line-soft);
-    background:var(--panel); color:var(--ink-dim);
-  }
-  .cat-tab.active{ border-color:var(--gold); background:rgba(201,161,59,.10); color:var(--gold-bright); box-shadow:0 4px 16px rgba(0,0,0,.22); }
-  .board-head{ display:flex; justify-content:space-between; align-items:center; margin:20px 0 14px; }
-  .board-title{ font-family:'Cinzel',serif; font-size:16px; color:var(--gold-bright); }
-  .entries-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
-  .entry-card{
-    background:var(--panel); border:1px solid var(--line-soft); border-radius:6px; overflow:hidden;
-    display:flex; flex-direction:column;
-  }
-  .entry-imgs{ display:flex; overflow-x:auto; }
-  .entry-imgs img{ height:130px; object-fit:cover; cursor:zoom-in; }
-  .entry-body{ padding:12px 14px; flex:1; display:flex; flex-direction:column; gap:8px; }
-  .entry-text{ font-size:13.5px; color:var(--ink); line-height:1.5; white-space:pre-wrap; }
-  .entry-meta{ margin-top:auto; display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--ink-faint); }
-  .img-pick{ width:70px; height:70px; border-radius:4px; border:1px dashed var(--line); background:transparent; color:var(--ink-faint); cursor:pointer; display:flex; align-items:center; justify-content:center; }
-  .img-thumb{ position:relative; width:70px; height:70px; }
-  .img-thumb img{ width:100%; height:100%; object-fit:cover; border-radius:4px; border:1px solid var(--line-soft); }
-  .img-thumb button{ position:absolute; top:-6px; right:-6px; background:var(--red); border-radius:50%; width:18px; height:18px; border:none; color:#fff; cursor:pointer; font-size:11px; line-height:1; }
-  .folder-card{
-    background:var(--panel); border:1px solid var(--line-soft); border-radius:6px; padding:16px;
-    display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;
-  }
-  .folder-card:hover{ border-color:var(--gold-dim); transform:translateY(-2px); box-shadow:0 10px 24px rgba(0,0,0,.22); }
-  .folder-card{transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;}
-  .folder-card .folder-title{ font-family:'Cinzel',serif; font-size:15px; color:var(--gold-bright); display:flex; align-items:center; gap:8px; }
-  #lightbox{ position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:120; display:flex; align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
-  #lightbox img{ max-width:92vw; max-height:92vh; border-radius:4px; }
-</style>
-</head>
-<body>
+/* ---------------- image compression ---------------- */
+function compressImage(file, maxW = 500, quality = 0.55) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("read failed"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("image failed"));
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width);
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
-<button id="crown-btn" title="Admin-Zugang">&#9813;</button>
-<button id="admin-notify-btn" class="hidden" title="Neue Anmeldungen ansehen">&#128276;<span id="admin-notify-count" class="notify-count hidden">0</span></button>
+/* ---------------- live listeners ---------------- */
+db.collection("users").onSnapshot((snap) => {
+  usersMap = {};
+  snap.forEach((doc) => (usersMap[doc.id] = doc.data()));
+  onUsersOrRequestsChanged();
+});
+db.collection("requests").onSnapshot((snap) => {
+  requestsList = [];
+  snap.forEach((doc) => requestsList.push({ icName: doc.id, ...doc.data() }));
+  onUsersOrRequestsChanged();
+});
+db.collection("meta").doc("funk").onSnapshot((doc) => {
+  funkState = doc.exists ? doc.data() : { value: "" };
+  renderFunk();
+});
 
-<!-- LOGIN / REGISTER -->
-<div id="screen-login" class="centered-screen">
-  <div class="card login-card">
-    <div style="text-align:center;margin-bottom:26px;">
-      <div class="brand-crown">&#9813;</div>
-      <div class="cinzel brand-name" style="color:var(--gold-bright);">SYNDIKAT</div>
-      <div class="brand-kicker">OPERATIONS-NETZWERK</div>
-      <div class="brand-rule">VERTRAUEN · LOYALITÄT · MACHT</div>
-      <div id="login-subtitle" style="font-size:12.5px;color:var(--ink-dim);">&#128274; Geschützter Zugang für Mitglieder</div>
-    </div>
+function onUsersOrRequestsChanged() {
+  // waiting screen: promote to dashboard if approved / show rejected if removed
+  if (!currentUser && pendingWatchName) {
+    if (usersMap[pendingWatchName]) {
+      currentUser = pendingWatchName;
+      pendingWatchName = null;
+      enterDashboard();
+    } else if (!requestsList.some((r) => r.icName === pendingWatchName)) {
+      pendingWatchName = null;
+      showScreen("rejected");
+    }
+  }
+  if (currentUser) { renderDashboardHeader(); renderAdminBell(); }
+  if (adminUnlocked) renderAdminPanel();
+}
 
-    <form id="form-login">
-      <label class="field"><div class="field-label">IC NAME</div><input type="text" id="login-icname" placeholder="Vorname Nachname" /></label>
-      <label class="field"><div class="field-label">PASSWORT</div><input type="password" id="login-password" placeholder="••••••••" /></label>
-      <div id="login-error"></div>
-      <button type="submit" class="btn btn-solid btn-full" id="login-submit">&#10132; ANMELDEN</button>
-      <div style="text-align:center;margin-top:16px;font-size:12.5px;color:var(--ink-faint);">
-        Noch kein Zugang? <span class="switch-link" id="go-register">Registrieren</span>
-      </div>
-    </form>
+let pendingWatchName = null;
 
-    <form id="form-register" class="hidden">
-      <label class="field"><div class="field-label">1 · IC NAME</div><input type="text" id="reg-icname" placeholder="Vorname Nachname" /></label>
-      <label class="field"><div class="field-label">2 · PASSWORT</div><input type="password" id="reg-password" placeholder="Neues Passwort wählen" /></label>
-      <label class="field"><div class="field-label">3 · RANG</div><input type="text" id="reg-rang" placeholder="z.B. Kandidat" /></label>
-      <div id="register-error"></div>
-      <button type="submit" class="btn btn-solid btn-full" id="register-submit">&#9998; ANFRAGE SENDEN</button>
-      <div style="text-align:center;margin-top:16px;font-size:12.5px;color:var(--ink-faint);">
-        Schon registriert? <span class="switch-link" id="go-login">Zum Login</span>
-      </div>
-    </form>
-    <div class="access-notes">
-      <div class="access-note"><span>&#128193;</span>Eigene Ordner</div>
-      <div class="access-note"><span>&#128247;</span>Notizen & Bilder</div>
-      <div class="access-note"><span>&#128737;</span>Interner Bereich</div>
-    </div>
-  </div>
-</div>
+/* ---------------- screen switching ---------------- */
+function showScreen(name) {
+  ["login", "waiting", "rejected"].forEach((s) => hide("screen-" + s));
+  hide("screen-dashboard");
+  if (name) show("screen-" + name);
+}
 
-<!-- WAITING -->
-<div id="screen-waiting" class="centered-screen hidden">
-  <div style="text-align:center;max-width:360px;">
-    <div style="font-size:30px;color:var(--gold);margin-bottom:16px;">&#9202;</div>
-    <div class="cinzel" style="font-size:19px;color:var(--gold-bright);margin-bottom:8px;">Anfrage eingereicht</div>
-    <div style="font-size:13.5px;color:var(--ink-dim);line-height:1.6;">
-      Deine Anfrage für <b id="waiting-name" style="color:var(--ink);"></b> wartet auf Freigabe durch die Führung.
-      Diese Seite aktualisiert sich automatisch.
-    </div>
-  </div>
-</div>
+/* ---------------- LOGIN / REGISTER ---------------- */
+$("go-register").onclick = () => {
+  hide("form-login"); show("form-register");
+  $("login-subtitle").textContent = "📝 Zugang zur Prüfung einreichen";
+};
+$("go-login").onclick = () => {
+  hide("form-register"); show("form-login");
+  $("login-subtitle").textContent = "🔒 Geschützter Zugang für Mitglieder";
+};
 
-<!-- REJECTED -->
-<div id="screen-rejected" class="centered-screen hidden">
-  <div style="text-align:center;max-width:340px;">
-    <div class="cinzel" style="font-size:19px;color:var(--red-bright);margin-bottom:10px;">Anfrage abgelehnt</div>
-    <div style="font-size:13.5px;color:var(--ink-dim);margin-bottom:18px;">
-      Diese Anfrage wurde nicht angenommen. Du kannst dich erneut registrieren.
-    </div>
-    <button class="btn btn-solid" id="rejected-back">Zurück</button>
-  </div>
-</div>
+$("form-login").onsubmit = async (e) => {
+  e.preventDefault();
+  $("login-error").innerHTML = "";
+  const icName = $("login-icname").value.trim();
+  const password = $("login-password").value;
+  if (!icName || !password) {
+    $("login-error").innerHTML = '<div class="error-line">Bitte IC-Name und Passwort eingeben.</div>';
+    return;
+  }
+  const userDoc = await db.collection("users").doc(icName).get();
+  if (!userDoc.exists) {
+    const reqDoc = await db.collection("requests").doc(icName).get();
+    if (reqDoc.exists) {
+      pendingWatchName = icName;
+      $("waiting-name").textContent = icName;
+      showScreen("waiting");
+    } else {
+      $("login-error").innerHTML = '<div class="error-line">Kein Zugang mit diesem IC-Namen gefunden.</div>';
+    }
+    return;
+  }
+  const data = userDoc.data();
+  if (data.password !== password) {
+    $("login-error").innerHTML = '<div class="error-line">Falsches Passwort.</div>';
+    return;
+  }
+  currentUser = icName;
+  enterDashboard();
+};
 
-<!-- DASHBOARD -->
-<div id="screen-dashboard" class="hidden">
-  <div class="header-card">
-    <div style="display:flex;align-items:center;gap:14px;">
-      <div id="my-avatar" class="avatar editable" style="width:56px;height:56px;">
-        <div class="avatar-hover">&#128247;</div>
-      </div>
-      <input type="file" id="avatar-input" accept="image/*" hidden />
+$("form-register").onsubmit = async (e) => {
+  e.preventDefault();
+  $("register-error").innerHTML = "";
+  const icName = $("reg-icname").value.trim();
+  const password = $("reg-password").value;
+  const rang = $("reg-rang").value.trim();
+  if (!icName || !password || !rang) {
+    $("register-error").innerHTML = '<div class="error-line">Bitte alle drei Felder ausfüllen.</div>';
+    return;
+  }
+  const userDoc = await db.collection("users").doc(icName).get();
+  if (userDoc.exists) {
+    $("register-error").innerHTML = '<div class="error-line">Dieser IC-Name ist bereits registriert.</div>';
+    return;
+  }
+  await db.collection("requests").doc(icName).set({ password, rang, ts: Date.now() });
+  pendingWatchName = icName;
+  $("waiting-name").textContent = icName;
+  showScreen("waiting");
+};
+
+$("rejected-back").onclick = () => showScreen("login");
+
+/* ---------------- ADMIN GATE ---------------- */
+$("crown-btn").onclick = () => { $("admin-pw").value = ""; $("admin-gate-error").innerHTML = ""; show("admin-gate"); };
+$("admin-gate-close").onclick = () => hide("admin-gate");
+$("form-admin-gate").onsubmit = (e) => {
+  e.preventDefault();
+  if ($("admin-pw").value === ADMIN_PASSWORD) {
+    hide("admin-gate");
+    adminUnlocked = true;
+    showScreen(null);
+    hide("screen-dashboard");
+    show("admin-panel");
+    renderAdminPanel();
+  } else {
+    $("admin-gate-error").innerHTML = '<div class="error-line">Falsches Passwort.</div>';
+  }
+};
+$("admin-back").onclick = () => {
+  adminUnlocked = false;
+  hide("admin-panel");
+  if (currentUser) { show("screen-dashboard"); } else { showScreen("login"); }
+};
+
+/* ---------------- ADMIN PANEL ---------------- */
+document.querySelectorAll(".admin-tab").forEach((btn) => {
+  btn.onclick = () => {
+    document.querySelectorAll(".admin-tab").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    ["requests", "users", "funk"].forEach((t) => {
+      $("admin-tab-" + t).classList.toggle("hidden", t !== btn.dataset.tab);
+    });
+  };
+});
+
+function renderAdminPanel() {
+  $("tab-requests-btn").textContent = `📋 Anfragen (${requestsList.length})`;
+  const userEntries = Object.entries(usersMap);
+  $("tab-users-btn").textContent = `👥 Nutzer & Rechte (${userEntries.length})`;
+  const adminCount = userEntries.filter(([, user]) => user.rights?.admin).length;
+  $("admin-summary").innerHTML = `
+    <div class="admin-stat"><div class="admin-stat-number">${requestsList.length}</div><div class="admin-stat-label">OFFENE ANFRAGEN</div></div>
+    <div class="admin-stat"><div class="admin-stat-number">${userEntries.length}</div><div class="admin-stat-label">AKTIVE MITGLIEDER</div></div>
+    <div class="admin-stat"><div class="admin-stat-number">${adminCount}</div><div class="admin-stat-label">ADMIN-RECHTE</div></div>`;
+
+  const reqBox = $("admin-tab-requests");
+  reqBox.innerHTML = "";
+  if (requestsList.length === 0) {
+    reqBox.innerHTML = '<div class="empty-note">Keine offenen Anfragen.</div>';
+  }
+  requestsList.forEach((r) => {
+    const row = document.createElement("div");
+    row.className = "row-card";
+    row.innerHTML = `
       <div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <span class="cinzel" id="my-name" style="font-size:19px;color:var(--gold-bright);font-weight:600;"></span>
-          <span class="rank-badge" id="my-rang"></span>
-          <span class="admin-badge hidden" id="my-admin-badge">Admin-Recht</span>
-        </div>
-        <div id="bio-display" style="font-size:12.5px;color:var(--ink-faint);margin-top:4px;cursor:pointer;">Status hinzufügen... &#9998;</div>
-        <div id="bio-edit" class="hidden" style="display:flex;gap:6px;margin-top:6px;">
-          <input type="text" id="bio-input" placeholder="Kurzer Status..." style="font-size:12.5px;padding:5px 8px;width:200px;" />
-          <button class="icon-btn" id="bio-save">&#10003;</button>
-          <button class="icon-btn" id="bio-cancel">&#10005;</button>
-        </div>
+        <div style="color:var(--ink);font-weight:600;font-size:14.5px;">${escapeHtml(r.icName)}</div>
+        <div style="color:var(--ink-faint);font-size:12px;">Rang-Wunsch: ${escapeHtml(r.rang)} · ${new Date(r.ts).toLocaleString("de-DE")}</div>
       </div>
-    </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-solid" data-approve="${escapeAttr(r.icName)}">&#10003; Annehmen</button>
+        <button class="btn btn-danger" data-reject="${escapeAttr(r.icName)}">&#10005; Ablehnen</button>
+      </div>`;
+    reqBox.appendChild(row);
+  });
+  reqBox.querySelectorAll("[data-approve]").forEach((b) => (b.onclick = () => approveRequest(b.dataset.approve)));
+  reqBox.querySelectorAll("[data-reject]").forEach((b) => (b.onclick = () => rejectRequest(b.dataset.reject)));
 
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-      <div class="funk-pill">
-        <span>&#128225;</span>
-        <span style="font-size:12.5px;color:var(--ink-dim);">FUNK:</span>
-        <span id="funk-display" style="font-size:12.5px;color:var(--ink);font-weight:600;"></span>
-        <input type="text" id="funk-input" class="hidden" style="font-size:12.5px;padding:3px 7px;width:110px;" />
-        <button class="icon-btn hidden" id="funk-edit-btn" title="Funk ändern">&#9998;</button>
-        <button class="icon-btn hidden" id="funk-save-btn">&#10003;</button>
-        <button class="icon-btn hidden" id="funk-cancel-btn">&#10005;</button>
-      </div>
-      <button class="btn btn-outline" id="tarnen-btn">TARNEN</button>
-      <button class="icon-btn" id="logout-btn" title="Abmelden" style="width:34px;height:34px;border:1px solid var(--line-soft);border-radius:4px;">&#10148;</button>
-    </div>
-  </div>
-
-  <div class="cat-tabs" id="cat-tabs"></div>
-
-  <div class="board-head">
-    <div class="board-title" id="board-title" style="display:flex;align-items:center;gap:10px;">
-      <button class="icon-btn hidden" id="folder-back-btn" style="color:var(--gold-bright);font-size:16px;">&#8592;</button>
-      <span id="board-title-text"></span>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-      <button class="btn btn-outline" id="add-folder-btn">&#128193; Neuer Ordner</button>
-      <button class="btn btn-solid" id="add-entry-btn">+ Neuer Eintrag</button>
-    </div>
-  </div>
-  <div class="entries-grid" id="folders-grid"></div>
-  <div class="entries-grid" id="entries-grid"></div>
-</div>
-
-<!-- ADMIN GATE MODAL -->
-<div id="admin-gate" class="modal-overlay hidden">
-  <div class="modal-box" style="max-width:320px;">
-    <div class="modal-head">
-      <div class="modal-title">Admin-Zugang</div>
-      <button class="icon-btn" id="admin-gate-close">&#10005;</button>
-    </div>
-    <form id="form-admin-gate">
-      <label class="field"><div class="field-label">PASSWORT</div><input type="password" id="admin-pw" placeholder="••••" /></label>
-      <div id="admin-gate-error"></div>
-      <button type="submit" class="btn btn-solid btn-full">Bestätigen</button>
-    </form>
-  </div>
-</div>
-
-<!-- ADD FOLDER MODAL -->
-<div id="add-folder-modal" class="modal-overlay hidden">
-  <div class="modal-box" style="max-width:360px;">
-    <div class="modal-head">
-      <div class="modal-title">Neuer Ordner</div>
-      <button class="icon-btn" id="add-folder-close">&#10005;</button>
-    </div>
-    <form id="form-add-folder">
-      <label class="field"><div class="field-label">ÜBERSCHRIFT</div>
-        <input type="text" id="folder-title" placeholder="z.B. Weed" />
-      </label>
-      <button type="submit" class="btn btn-solid btn-full">Ordner erstellen</button>
-    </form>
-  </div>
-</div>
-
-<!-- ADD ENTRY MODAL -->
-<div id="add-entry-modal" class="modal-overlay hidden">
-  <div class="modal-box" style="max-width:440px;">
-    <div class="modal-head">
-      <div class="modal-title">Neuer Eintrag</div>
-      <button class="icon-btn" id="add-entry-close">&#10005;</button>
-    </div>
-    <form id="form-add-entry">
-      <label class="field"><div class="field-label">TEXT / NOTIZ</div>
-        <textarea id="entry-text" rows="4" placeholder="Details eintragen..."></textarea>
-      </label>
-      <div style="margin-bottom:14px;">
-        <div class="field-label" id="entry-images-label">SCREENSHOTS (max. 3)</div>
-        <div id="entry-images" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
-        <input type="file" id="entry-file-input" accept="image/*" multiple hidden />
-      </div>
-      <button type="submit" class="btn btn-solid btn-full">+ Eintrag speichern</button>
-    </form>
-  </div>
-</div>
-
-<!-- ADMIN PANEL -->
-<div id="admin-panel" class="hidden">
-  <div class="admin-wrap">
-    <div class="admin-hero">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;position:relative;z-index:1;">
+  const userBox = $("admin-tab-users");
+  userBox.innerHTML = "";
+  if (userEntries.length === 0) {
+    userBox.innerHTML = '<div class="empty-note">Noch keine freigeschalteten Nutzer.</div>';
+  }
+  userEntries.forEach(([name, u]) => {
+    const row = document.createElement("div");
+    row.className = "row-card";
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="avatar" style="width:34px;height:34px;">${u.avatar ? `<img src="${u.avatar}"/>` : ""}</div>
         <div>
-          <div class="admin-eyebrow">&#9813; FÜHRUNGSZENTRALE</div>
-          <div class="admin-main-title">ADMIN-PANEL</div>
-          <div class="admin-description">Verwalte Zugänge, Berechtigungen und den gemeinsamen Funk-Kanal des Operations-Netzwerks.</div>
+          <div style="color:var(--ink);font-weight:600;font-size:14.5px;">${escapeHtml(name)}</div>
+          <div style="color:var(--ink-faint);font-size:12px;">${escapeHtml(u.rang || "")}</div>
         </div>
-        <button class="btn btn-ghost" id="admin-back">&#8592; Zurück</button>
       </div>
-    </div>
-    <div class="admin-summary" id="admin-summary"></div>
-    <div class="admin-tabs">
-      <button class="admin-tab active" data-tab="requests" id="tab-requests-btn">&#128203; Anfragen (0)</button>
-      <button class="admin-tab" data-tab="users" id="tab-users-btn">&#128101; Nutzer & Rechte (0)</button>
-      <button class="admin-tab" data-tab="funk">&#128225; Funk</button>
-    </div>
-    <div id="admin-tab-requests"></div>
-    <div id="admin-tab-users" class="hidden"></div>
-    <div id="admin-tab-funk" class="hidden" style="max-width:320px;">
-      <label class="field"><div class="field-label">FUNK-KANAL / FREQUENZ</div><input type="text" id="admin-funk-input" placeholder="z.B. 812-4471" /></label>
-      <button class="btn btn-solid" id="admin-funk-save">Speichern</button>
-    </div>
-  </div>
-</div>
+      <div style="display:flex;gap:14px;align-items:center;">
+        <span class="toggle-wrap">Funk <span class="toggle ${u.rights?.funk ? "on" : ""}" data-right="funk" data-user="${escapeAttr(name)}"><span class="toggle-dot"></span></span></span>
+        <span class="toggle-wrap">Admin <span class="toggle ${u.rights?.admin ? "on" : ""}" data-right="admin" data-user="${escapeAttr(name)}"><span class="toggle-dot"></span></span></span>
+        <button class="icon-btn" style="color:var(--red-bright);" data-remove="${escapeAttr(name)}">&#128465;</button>
+      </div>`;
+    userBox.appendChild(row);
+  });
+  userBox.querySelectorAll("[data-right]").forEach((t) => (t.onclick = () => toggleRight(t.dataset.user, t.dataset.right)));
+  userBox.querySelectorAll("[data-remove]").forEach((b) => (b.onclick = () => removeUser(b.dataset.remove)));
 
-<div id="lightbox" class="hidden"><img id="lightbox-img" src="" alt="" /></div>
+  $("admin-funk-input").value = funkState.value || "";
+}
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="config.js"></script>
-<script src="app.js"></script>
-</body>
-</html>
+async function approveRequest(icName) {
+  const req = requestsList.find((r) => r.icName === icName);
+  if (!req) return;
+  await db.collection("users").doc(icName).set({
+    password: req.password,
+    rang: req.rang,
+    rights: { funk: false, admin: false },
+    avatar: null,
+    bio: "",
+    tarnen: false,
+    joined: Date.now(),
+  });
+  await db.collection("requests").doc(icName).delete();
+}
+async function rejectRequest(icName) {
+  await db.collection("requests").doc(icName).delete();
+}
+async function toggleRight(icName, right) {
+  const u = usersMap[icName];
+  if (!u) return;
+  const rights = { ...(u.rights || {}) };
+  rights[right] = !rights[right];
+  await db.collection("users").doc(icName).update({ rights });
+}
+async function removeUser(icName) {
+  await db.collection("users").doc(icName).delete();
+}
+$("admin-funk-save").onclick = async () => {
+  await db.collection("meta").doc("funk").set({ value: $("admin-funk-input").value, updatedBy: "Admin", ts: Date.now() });
+};
+
+/* ---------------- DASHBOARD ---------------- */
+function enterDashboard() {
+  showScreen(null);
+  hide("admin-panel");
+  show("screen-dashboard");
+  renderDashboardHeader();
+  renderAdminBell();
+  buildCategoryTabs();
+  switchCategory(activeCategory);
+}
+
+$("logout-btn").onclick = () => {
+  currentUser = null;
+  hide("admin-notify-btn");
+  if (entriesUnsub) entriesUnsub();
+  hide("screen-dashboard");
+  showScreen("login");
+};
+
+function me() { return usersMap[currentUser] || {}; }
+
+function renderDashboardHeader() {
+  if (!currentUser) return;
+  const u = me();
+  $("my-name").textContent = currentUser;
+  $("my-rang").textContent = u.rang || "";
+  $("my-admin-badge").classList.toggle("hidden", !u.rights?.admin);
+
+  const avatarEl = $("my-avatar");
+  avatarEl.innerHTML = u.avatar
+    ? `<img src="${u.avatar}"/><div class="avatar-hover">&#128247;</div>`
+    : `<div class="avatar-hover">&#128247;</div>`;
+
+  if ($("bio-edit").classList.contains("hidden")) {
+    $("bio-display").innerHTML = (u.bio ? escapeHtml(u.bio) : "Status hinzufügen...") + " &#9998;";
+  }
+
+  renderFunk();
+}
+
+function renderAdminBell() {
+  const isAdmin = !!me().rights?.admin;
+  $("admin-notify-btn").classList.toggle("hidden", !isAdmin);
+  const count = requestsList.length;
+  $("admin-notify-count").textContent = count > 99 ? "99+" : count;
+  $("admin-notify-count").classList.toggle("hidden", count === 0);
+  $("admin-notify-btn").title = count ? `${count} neue Anmeldung${count === 1 ? "" : "en"} ansehen` : "Keine neuen Anmeldungen";
+}
+
+$("admin-notify-btn").onclick = () => {
+  if (!currentUser || !me().rights?.admin) return;
+  adminUnlocked = true;
+  showScreen(null); hide("screen-dashboard"); show("admin-panel"); renderAdminPanel();
+  const firstTab = document.querySelector('.admin-tab[data-tab="requests"]');
+  if (firstTab) firstTab.click();
+};
+
+$("my-avatar").onclick = () => $("avatar-input").click();
+$("avatar-input").onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file || !currentUser) return;
+  const dataUrl = await compressImage(file, 200, 0.6);
+  await db.collection("users").doc(currentUser).update({ avatar: dataUrl });
+};
+
+$("bio-display").onclick = () => {
+  $("bio-input").value = me().bio || "";
+  hide("bio-display"); show("bio-edit");
+  $("bio-input").focus();
+};
+$("bio-cancel").onclick = () => { hide("bio-edit"); show("bio-display"); };
+$("bio-save").onclick = async () => {
+  await db.collection("users").doc(currentUser).update({ bio: $("bio-input").value });
+  hide("bio-edit"); show("bio-display");
+};
+
+function renderFunk() {
+  $("funk-display").textContent = funkMasked ? "•••" : (funkState.value || "—");
+  const canFunk = !!me().rights?.funk || !!me().rights?.admin;
+  $("funk-edit-btn").classList.toggle("hidden", !(currentUser && canFunk));
+  $("tarnen-btn").textContent = funkMasked ? "SICHTBAR" : "TARNEN";
+}
+$("funk-edit-btn").onclick = () => {
+  $("funk-input").value = funkState.value || "";
+  hide("funk-display"); hide("funk-edit-btn");
+  show("funk-input"); show("funk-save-btn"); show("funk-cancel-btn");
+  $("funk-input").focus();
+};
+$("funk-cancel-btn").onclick = () => {
+  hide("funk-input"); hide("funk-save-btn"); hide("funk-cancel-btn");
+  show("funk-display"); show("funk-edit-btn");
+};
+$("funk-save-btn").onclick = async () => {
+  await db.collection("meta").doc("funk").set({ value: $("funk-input").value, updatedBy: currentUser, ts: Date.now() });
+  hide("funk-input"); hide("funk-save-btn"); hide("funk-cancel-btn");
+  show("funk-display"); show("funk-edit-btn");
+};
+
+$("tarnen-btn").onclick = () => {
+  funkMasked = !funkMasked;
+  renderFunk();
+};
+
+/* ---------------- CATEGORY TABS + BOARD ---------------- */
+function buildCategoryTabs() {
+  const wrap = $("cat-tabs");
+  wrap.innerHTML = "";
+  CATEGORIES.forEach((c) => {
+    const btn = document.createElement("button");
+    btn.className = "cat-tab" + (c.key === activeCategory ? " active" : "");
+    btn.textContent = `${c.icon}  ${c.label}`;
+    btn.onclick = () => switchCategory(c.key);
+    wrap.appendChild(btn);
+  });
+}
+
+function switchCategory(key) {
+  activeCategory = key;
+  folderTrail = [];
+  document.querySelectorAll(".cat-tab").forEach((b, i) => b.classList.toggle("active", CATEGORIES[i].key === key));
+  if (entriesUnsub) { entriesUnsub(); entriesUnsub = null; }
+  if (foldersUnsub) { foldersUnsub(); foldersUnsub = null; }
+  showDirectory();
+}
+
+function folderCollection() { return activeCategory + "_folders"; }
+function currentFolder() { return folderTrail[folderTrail.length - 1] || null; }
+function entryCollection() {
+  const folder = currentFolder();
+  return folder ? activeCategory + "_entries_" + folder.id : "entries_" + activeCategory;
+}
+
+function showDirectory() {
+  const folder = currentFolder();
+  $("board-title-text").textContent = folder ? folder.name : CATEGORIES.find((c) => c.key === activeCategory).label;
+  $("folder-back-btn").classList.toggle("hidden", folderTrail.length === 0);
+  show("folders-grid"); show("entries-grid");
+  currentMaxImages = folder ? 5 : 3;
+  $("folders-grid").innerHTML = '<div class="empty-note">Lade Ordner...</div>';
+  $("entries-grid").innerHTML = '<div class="empty-note">Lade Einträge...</div>';
+  if (foldersUnsub) foldersUnsub();
+  if (entriesUnsub) entriesUnsub();
+  foldersUnsub = db.collection(folderCollection()).onSnapshot((snap) => {
+    const parentId = folder ? folder.id : null;
+    const folders = [];
+    snap.forEach((doc) => { const data = doc.data(); if ((data.parentId || null) === parentId) folders.push({ id: doc.id, ...data }); });
+    folders.sort((a, b) => b.ts - a.ts);
+    renderFolders(folders);
+  });
+  const collection = entryCollection();
+  entriesUnsub = db.collection(collection).orderBy("ts", "desc").onSnapshot((snap) => {
+    const entries = []; snap.forEach((doc) => entries.push({ id: doc.id, ...doc.data() }));
+    renderEntries(entries, collection);
+  });
+}
+
+function renderFolders(folders) {
+  const grid = $("folders-grid");
+  grid.innerHTML = "";
+  if (folders.length === 0) {
+    grid.innerHTML = '<div class="empty-note">Noch keine Ordner. Leg mit "+ Neuer Ordner" den ersten an.</div>';
+    return;
+  }
+  const isAdmin = !!me().rights?.admin;
+  folders.forEach((f) => {
+    const card = document.createElement("div");
+    card.className = "folder-card";
+    const canDelete = f.author === currentUser || isAdmin;
+    card.innerHTML = `
+      <div class="folder-title">&#128193; ${escapeHtml(f.name)}</div>
+      ${canDelete ? `<button class="icon-btn" style="color:var(--red-bright);" data-delfolder="${f.id}">&#128465;</button>` : ""}
+    `;
+    card.onclick = (e) => {
+      if (e.target.closest("[data-delfolder]")) return;
+      openFolder(f);
+    };
+    grid.appendChild(card);
+  });
+  grid.querySelectorAll("[data-delfolder]").forEach((btn) => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      await deleteFolderTree(btn.dataset.delfolder);
+    };
+  });
+}
+
+async function deleteFolderTree(folderId) {
+  const allFolders = await db.collection(folderCollection()).get();
+  const descendants = [folderId];
+  for (let cursor = 0; cursor < descendants.length; cursor++) {
+    const parentId = descendants[cursor];
+    allFolders.forEach((doc) => { if (doc.data().parentId === parentId) descendants.push(doc.id); });
+  }
+  const refs = [db.collection(folderCollection()).doc(folderId)];
+  for (const id of descendants) {
+    const items = await db.collection(activeCategory + "_entries_" + id).get();
+    items.forEach((doc) => refs.push(doc.ref));
+    if (id !== folderId) refs.push(db.collection(folderCollection()).doc(id));
+  }
+  while (refs.length) {
+    const batch = db.batch(); refs.splice(0, 450).forEach((ref) => batch.delete(ref)); await batch.commit();
+  }
+}
+
+function openFolder(folder) {
+  folderTrail.push(folder);
+  if (entriesUnsub) { entriesUnsub(); entriesUnsub = null; }
+  if (foldersUnsub) { foldersUnsub(); foldersUnsub = null; }
+  showDirectory();
+}
+$("folder-back-btn").onclick = () => { folderTrail.pop(); if (entriesUnsub) entriesUnsub(); if (foldersUnsub) foldersUnsub(); showDirectory(); };
+
+function renderEntries(entries, collectionName) {
+  const grid = $("entries-grid");
+  grid.innerHTML = "";
+  if (entries.length === 0) {
+    grid.innerHTML = '<div class="empty-note">Noch keine Einträge in dieser Kategorie.</div>';
+    return;
+  }
+  const isAdmin = !!me().rights?.admin;
+  entries.forEach((e) => {
+    const card = document.createElement("div");
+    card.className = "entry-card";
+    let imgsHtml = "";
+    if (e.images && e.images.length) {
+      imgsHtml = `<div class="entry-imgs">${e.images
+        .map((img) => `<img src="${img}" style="width:${e.images.length === 1 ? "100%" : "150px"};flex:${e.images.length === 1 ? "1 1 100%" : "0 0 auto"};" data-lightbox="${escapeAttr(img)}"/>`)
+        .join("")}</div>`;
+    }
+    const canDelete = e.author === currentUser || isAdmin;
+    card.innerHTML = `
+      ${imgsHtml}
+      <div class="entry-body">
+        ${e.text ? `<div class="entry-text">${escapeHtml(e.text)}</div>` : ""}
+        <div class="entry-meta">
+          <span>${escapeHtml(e.author)} · ${new Date(e.ts).toLocaleDateString("de-DE")}</span>
+          ${canDelete ? `<button class="icon-btn" style="color:var(--red-bright);" data-del="${e.id}">&#128465;</button>` : ""}
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+  grid.querySelectorAll("[data-lightbox]").forEach((img) => {
+    img.onclick = () => { $("lightbox-img").src = img.dataset.lightbox; show("lightbox"); };
+  });
+  grid.querySelectorAll("[data-del]").forEach((btn) => {
+    btn.onclick = () => db.collection(collectionName).doc(btn.dataset.del).delete();
+  });
+}
+$("lightbox").onclick = () => hide("lightbox");
+
+/* ---------------- ADD ENTRY / ADD FOLDER MODALS ---------------- */
+$("add-entry-btn").onclick = () => {
+  entryImages = [];
+  $("entry-text").value = "";
+  $("entry-images-label").textContent = `SCREENSHOTS (max. ${currentMaxImages})`;
+  renderEntryImages();
+  show("add-entry-modal");
+};
+$("add-folder-btn").onclick = () => { $("folder-title").value = ""; show("add-folder-modal"); };
+$("add-entry-close").onclick = () => hide("add-entry-modal");
+$("add-folder-close").onclick = () => hide("add-folder-modal");
+$("form-add-folder").onsubmit = async (e) => {
+  e.preventDefault();
+  const name = $("folder-title").value.trim();
+  if (!name) return;
+  const folder = currentFolder();
+  await db.collection(folderCollection()).add({ name, parentId: folder ? folder.id : null, author: currentUser, ts: Date.now() });
+  hide("add-folder-modal");
+};
+
+function renderEntryImages() {
+  const wrap = $("entry-images");
+  wrap.innerHTML = "";
+  entryImages.forEach((img, i) => {
+    const div = document.createElement("div");
+    div.className = "img-thumb";
+    div.innerHTML = `<img src="${img}"/><button type="button" data-rm="${i}">&#10005;</button>`;
+    wrap.appendChild(div);
+  });
+  wrap.querySelectorAll("[data-rm]").forEach((b) => {
+    b.onclick = () => { entryImages.splice(Number(b.dataset.rm), 1); renderEntryImages(); };
+  });
+  if (entryImages.length < currentMaxImages) {
+    const pick = document.createElement("button");
+    pick.type = "button";
+    pick.className = "img-pick";
+    pick.textContent = "+";
+    pick.onclick = () => $("entry-file-input").click();
+    wrap.appendChild(pick);
+  }
+}
+$("entry-file-input").onchange = async (e) => {
+  const files = Array.from(e.target.files || []).slice(0, currentMaxImages - entryImages.length);
+  for (const f of files) {
+    const compressed = await compressImage(f);
+    entryImages.push(compressed);
+  }
+  e.target.value = "";
+  renderEntryImages();
+};
+$("form-add-entry").onsubmit = async (e) => {
+  e.preventDefault();
+  const text = $("entry-text").value.trim();
+  if (!text && entryImages.length === 0) return;
+  const targetCollection = entryCollection();
+  await db.collection(targetCollection).add({
+    text, images: entryImages, author: currentUser, ts: Date.now(),
+  });
+  hide("add-entry-modal");
+};
+
+/* ---------------- helpers ---------------- */
+function escapeHtml(str) {
+  return String(str || "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+}
+function escapeAttr(str) { return escapeHtml(str); }
+
+/* ---------------- boot ---------------- */
+showScreen("login");
