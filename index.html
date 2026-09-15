@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Operations-Netzwerk</title>
+<title>SYNDIKAT · Operations-Netzwerk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -28,6 +28,18 @@
     background:radial-gradient(circle at 50% 30%,transparent 0,rgba(0,0,0,.38) 70%);
   }
   #screen-login .card{background:rgba(12,10,6,.94);box-shadow:0 22px 70px rgba(0,0,0,.65);}
+  .login-card{max-width:440px!important;padding:34px 32px!important;position:relative;overflow:hidden;}
+  .login-card::before{content:"";position:absolute;top:0;left:50%;width:160px;height:1px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,var(--gold-bright),transparent);}
+  .brand-crown{font-size:34px;line-height:1;color:var(--gold-bright);filter:drop-shadow(0 3px 8px rgba(201,161,59,.35));}
+  .brand-name{font-size:31px!important;letter-spacing:.13em;text-indent:.13em;text-shadow:0 2px 18px rgba(201,161,59,.24);}
+  .brand-kicker{font-size:10px;letter-spacing:.28em;color:var(--gold);margin-top:8px;text-indent:.28em;}
+  .brand-rule{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--gold-dim);font-size:10px;letter-spacing:.18em;margin:17px 0 19px;}
+  .brand-rule::before,.brand-rule::after{content:"";height:1px;width:60px;background:linear-gradient(90deg,transparent,var(--gold-dim));}.brand-rule::after{transform:scaleX(-1);}
+  .access-notes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:18px 0 4px;}
+  .access-note{font-size:10px;line-height:1.35;text-align:center;color:var(--ink-faint);padding:8px 3px;border-top:1px solid var(--line-soft);}
+  .access-note span{display:block;font-size:15px;margin-bottom:3px;}
+  .login-card input{padding:12px 13px;border-color:#51401e;}.login-card input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,161,59,.10);}
+  .login-card .btn-solid{padding:12px 16px;letter-spacing:.1em;}.login-card .btn-solid:hover{filter:brightness(1.08);transform:translateY(-1px);}
   .hidden{display:none !important;}
   .cinzel{font-family:'Cinzel',serif;}
   a{color:var(--gold);}
@@ -82,6 +94,8 @@
     display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px;
   }
   #crown-btn:hover{ color:var(--gold-bright); border-color:var(--gold); }
+  #admin-notify-btn{position:fixed;top:16px;left:62px;z-index:50;width:38px;height:38px;border-radius:50%;background:var(--panel);border:1px solid var(--gold-dim);color:var(--gold-bright);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;box-shadow:0 6px 18px rgba(0,0,0,.3);}
+  #admin-notify-btn:hover{background:#20190c;border-color:var(--gold-bright);transform:translateY(-1px);}.notify-count{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 4px;border-radius:10px;background:var(--red-bright);border:2px solid var(--bg);color:white;font:700 10px/14px 'Jost',sans-serif;display:flex;align-items:center;justify-content:center;}
   .modal-overlay{
     position:fixed; inset:0; background:rgba(4,3,1,.72); z-index:100;
     display:flex; align-items:center; justify-content:center; padding:16px;
@@ -98,16 +112,22 @@
     position:fixed; inset:0; background:var(--bg); z-index:90; overflow-y:auto;
   }
   .admin-wrap{ max-width:780px; margin:0 auto; padding:28px 20px 60px; }
+  .admin-hero{position:relative;overflow:hidden;padding:24px 24px 22px;margin-bottom:18px;border:1px solid var(--line);border-radius:9px;background:linear-gradient(115deg,rgba(201,161,59,.14),transparent 42%),linear-gradient(180deg,#171209,#0e0b07);}
+  .admin-hero::after{content:"♛";position:absolute;right:22px;bottom:-18px;font-size:106px;line-height:1;color:rgba(201,161,59,.08);}
+  .admin-eyebrow{font-size:10px;letter-spacing:.23em;color:var(--gold);margin-bottom:7px;}.admin-main-title{font-family:'Cinzel',serif;font-size:25px;color:var(--gold-bright);}.admin-description{position:relative;z-index:1;max-width:470px;font-size:13px;color:var(--ink-dim);line-height:1.55;margin-top:7px;}
+  .admin-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px 0 20px;}.admin-stat{background:var(--panel);border:1px solid var(--line-soft);border-radius:6px;padding:13px 14px;}.admin-stat-number{font-family:'Cinzel',serif;font-size:23px;color:var(--gold-bright);}.admin-stat-label{font-size:10px;letter-spacing:.08em;color:var(--ink-faint);margin-top:3px;}
   .admin-tabs{ display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
   .admin-tab{
     font-family:'Jost',sans-serif; font-size:13px; font-weight:600; padding:8px 14px;
     border-radius:3px; cursor:pointer; border:1px solid var(--line); background:transparent; color:var(--ink-dim);
   }
-  .admin-tab.active{ border-color:var(--gold); background:rgba(201,161,59,.12); color:var(--gold-bright); }
+  .admin-tab.active{ border-color:var(--gold); background:rgba(201,161,59,.12); color:var(--gold-bright); box-shadow:0 5px 18px rgba(0,0,0,.18); }
   .row-card{
     background:var(--panel); border:1px solid var(--line-soft); border-radius:5px; padding:12px 14px;
     display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;
   }
+  .row-card:hover{border-color:var(--gold-dim);}.row-card .btn{font-size:12px;padding:8px 11px;}
+  @media(max-width:520px){.admin-summary{grid-template-columns:1fr;}.admin-hero{padding:20px;}.admin-main-title{font-size:21px;}}
   .empty-note{ color:var(--ink-faint); font-size:13px; padding:18px 0; text-align:center; }
   .toggle{ width:30px; height:17px; border-radius:20px; background:#2a2416; position:relative; cursor:pointer; display:inline-block; vertical-align:middle; }
   .toggle.on{ background:var(--gold); }
@@ -149,7 +169,7 @@
     font-weight:600; font-family:'Jost',sans-serif; cursor:pointer; border:1px solid var(--line-soft);
     background:var(--panel); color:var(--ink-dim);
   }
-  .cat-tab.active{ border-color:var(--gold); background:rgba(201,161,59,.10); color:var(--gold-bright); }
+  .cat-tab.active{ border-color:var(--gold); background:rgba(201,161,59,.10); color:var(--gold-bright); box-shadow:0 4px 16px rgba(0,0,0,.22); }
   .board-head{ display:flex; justify-content:space-between; align-items:center; margin:20px 0 14px; }
   .board-title{ font-family:'Cinzel',serif; font-size:16px; color:var(--gold-bright); }
   .entries-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
@@ -170,7 +190,8 @@
     background:var(--panel); border:1px solid var(--line-soft); border-radius:6px; padding:16px;
     display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;
   }
-  .folder-card:hover{ border-color:var(--gold-dim); }
+  .folder-card:hover{ border-color:var(--gold-dim); transform:translateY(-2px); box-shadow:0 10px 24px rgba(0,0,0,.22); }
+  .folder-card{transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;}
   .folder-card .folder-title{ font-family:'Cinzel',serif; font-size:15px; color:var(--gold-bright); display:flex; align-items:center; gap:8px; }
   #lightbox{ position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:120; display:flex; align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
   #lightbox img{ max-width:92vw; max-height:92vh; border-radius:4px; }
@@ -179,21 +200,24 @@
 <body>
 
 <button id="crown-btn" title="Admin-Zugang">&#9813;</button>
+<button id="admin-notify-btn" class="hidden" title="Neue Anmeldungen ansehen">&#128276;<span id="admin-notify-count" class="notify-count hidden">0</span></button>
 
 <!-- LOGIN / REGISTER -->
 <div id="screen-login" class="centered-screen">
-  <div class="card">
+  <div class="card login-card">
     <div style="text-align:center;margin-bottom:26px;">
-      <div style="width:46px;height:46px;margin:0 auto 12px;border-radius:50%;border:1px solid var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:20px;">&#128737;</div>
-      <div class="cinzel" style="font-size:21px;color:var(--gold-bright);">Operations-Netzwerk</div>
-      <div id="login-subtitle" style="font-size:12.5px;color:var(--ink-faint);margin-top:4px;">Zugang mit bestehendem Konto</div>
+      <div class="brand-crown">&#9813;</div>
+      <div class="cinzel brand-name" style="color:var(--gold-bright);">SYNDIKAT</div>
+      <div class="brand-kicker">OPERATIONS-NETZWERK</div>
+      <div class="brand-rule">VERTRAUEN · LOYALITÄT · MACHT</div>
+      <div id="login-subtitle" style="font-size:12.5px;color:var(--ink-dim);">&#128274; Geschützter Zugang für Mitglieder</div>
     </div>
 
     <form id="form-login">
       <label class="field"><div class="field-label">IC NAME</div><input type="text" id="login-icname" placeholder="Vorname Nachname" /></label>
       <label class="field"><div class="field-label">PASSWORT</div><input type="password" id="login-password" placeholder="••••••••" /></label>
       <div id="login-error"></div>
-      <button type="submit" class="btn btn-solid btn-full" id="login-submit">Anmelden</button>
+      <button type="submit" class="btn btn-solid btn-full" id="login-submit">&#10132; ANMELDEN</button>
       <div style="text-align:center;margin-top:16px;font-size:12.5px;color:var(--ink-faint);">
         Noch kein Zugang? <span class="switch-link" id="go-register">Registrieren</span>
       </div>
@@ -204,11 +228,16 @@
       <label class="field"><div class="field-label">2 · PASSWORT</div><input type="password" id="reg-password" placeholder="Neues Passwort wählen" /></label>
       <label class="field"><div class="field-label">3 · RANG</div><input type="text" id="reg-rang" placeholder="z.B. Kandidat" /></label>
       <div id="register-error"></div>
-      <button type="submit" class="btn btn-solid btn-full" id="register-submit">Anfrage senden</button>
+      <button type="submit" class="btn btn-solid btn-full" id="register-submit">&#9998; ANFRAGE SENDEN</button>
       <div style="text-align:center;margin-top:16px;font-size:12.5px;color:var(--ink-faint);">
         Schon registriert? <span class="switch-link" id="go-login">Zum Login</span>
       </div>
     </form>
+    <div class="access-notes">
+      <div class="access-note"><span>&#128193;</span>Eigene Ordner</div>
+      <div class="access-note"><span>&#128247;</span>Notizen & Bilder</div>
+      <div class="access-note"><span>&#128737;</span>Interner Bereich</div>
+    </div>
   </div>
 </div>
 
@@ -344,17 +373,21 @@
 <!-- ADMIN PANEL -->
 <div id="admin-panel" class="hidden">
   <div class="admin-wrap">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:20px;color:var(--gold);">&#9813;</span>
-        <div class="cinzel" style="font-size:20px;color:var(--gold-bright);">Admin-Panel</div>
+    <div class="admin-hero">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;position:relative;z-index:1;">
+        <div>
+          <div class="admin-eyebrow">&#9813; FÜHRUNGSZENTRALE</div>
+          <div class="admin-main-title">ADMIN-PANEL</div>
+          <div class="admin-description">Verwalte Zugänge, Berechtigungen und den gemeinsamen Funk-Kanal des Operations-Netzwerks.</div>
+        </div>
+        <button class="btn btn-ghost" id="admin-back">&#8592; Zurück</button>
       </div>
-      <button class="btn btn-ghost" id="admin-back">&#8592; Zurück</button>
     </div>
+    <div class="admin-summary" id="admin-summary"></div>
     <div class="admin-tabs">
-      <button class="admin-tab active" data-tab="requests" id="tab-requests-btn">Anfragen (0)</button>
-      <button class="admin-tab" data-tab="users" id="tab-users-btn">Nutzer & Rechte (0)</button>
-      <button class="admin-tab" data-tab="funk">Funk</button>
+      <button class="admin-tab active" data-tab="requests" id="tab-requests-btn">&#128203; Anfragen (0)</button>
+      <button class="admin-tab" data-tab="users" id="tab-users-btn">&#128101; Nutzer & Rechte (0)</button>
+      <button class="admin-tab" data-tab="funk">&#128225; Funk</button>
     </div>
     <div id="admin-tab-requests"></div>
     <div id="admin-tab-users" class="hidden"></div>
