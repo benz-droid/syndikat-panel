@@ -20,7 +20,7 @@ let adminUnlocked = false;
 let activeCategory = CATEGORIES[0].key;
 let entriesUnsub = null;
 let foldersUnsub = null;
-let activeFolder = null; // {id, name} when inside a Routen & Orte folder
+let folderTrail = []; // beliebig tiefer Ordnerpfad innerhalb einer Kategorie
 let entryImages = []; // staged base64 images for "add entry" modal
 let currentMaxImages = 3;
 let funkMasked = false; // local-only: hides the funk value from view
@@ -307,7 +307,7 @@ function renderDashboardHeader() {
     ? `<img src="${u.avatar}"/><div class="avatar-hover">&#128247;</div>`
     : `<div class="avatar-hover">&#128247;</div>`;
 
-  if (!$("bio-input-focused")) {
+  if ($("bio-edit").classList.contains("hidden")) {
     $("bio-display").innerHTML = (u.bio ? escapeHtml(u.bio) : "Status hinzufügen...") + " &#9998;";
   }
 
@@ -375,42 +375,41 @@ function buildCategoryTabs() {
 
 function switchCategory(key) {
   activeCategory = key;
-  activeFolder = null;
+  folderTrail = [];
   document.querySelectorAll(".cat-tab").forEach((b, i) => b.classList.toggle("active", CATEGORIES[i].key === key));
   if (entriesUnsub) { entriesUnsub(); entriesUnsub = null; }
   if (foldersUnsub) { foldersUnsub(); foldersUnsub = null; }
-
-  if (key === "routenorte") {
-    showFolderList();
-  } else {
-    hide("folder-back-btn");
-    hide("folders-grid");
-    show("entries-grid");
-    currentMaxImages = 3;
-    $("board-title-text").textContent = CATEGORIES.find((c) => c.key === key).label;
-    $("add-entry-btn").textContent = "+ Neuer Eintrag";
-    $("entries-grid").innerHTML = '<div class="empty-note">Lade Einträge...</div>';
-    entriesUnsub = db.collection("entries_" + key).orderBy("ts", "desc").onSnapshot((snap) => {
-      const entries = [];
-      snap.forEach((doc) => entries.push({ id: doc.id, ...doc.data() }));
-      renderEntries(entries, "entries_" + key);
-    });
-  }
+  showDirectory();
 }
 
-function showFolderList() {
-  activeFolder = null;
-  hide("folder-back-btn");
-  hide("entries-grid");
-  show("folders-grid");
-  $("board-title-text").textContent = "Routen & Orte";
-  $("add-entry-btn").textContent = "+ Neuer Ordner";
+function folderCollection() { return activeCategory + "_folders"; }
+function currentFolder() { return folderTrail[folderTrail.length - 1] || null; }
+function entryCollection() {
+  const folder = currentFolder();
+  return folder ? activeCategory + "_entries_" + folder.id : "entries_" + activeCategory;
+}
+
+function showDirectory() {
+  const folder = currentFolder();
+  $("board-title-text").textContent = folder ? folder.name : CATEGORIES.find((c) => c.key === activeCategory).label;
+  $("folder-back-btn").classList.toggle("hidden", folderTrail.length === 0);
+  show("folders-grid"); show("entries-grid");
+  currentMaxImages = folder ? 5 : 3;
   $("folders-grid").innerHTML = '<div class="empty-note">Lade Ordner...</div>';
+  $("entries-grid").innerHTML = '<div class="empty-note">Lade Einträge...</div>';
   if (foldersUnsub) foldersUnsub();
-  foldersUnsub = db.collection("routenorte_folders").orderBy("ts", "desc").onSnapshot((snap) => {
+  if (entriesUnsub) entriesUnsub();
+  foldersUnsub = db.collection(folderCollection()).onSnapshot((snap) => {
+    const parentId = folder ? folder.id : null;
     const folders = [];
-    snap.forEach((doc) => folders.push({ id: doc.id, ...doc.data() }));
+    snap.forEach((doc) => { const data = doc.data(); if ((data.parentId || null) === parentId) folders.push({ id: doc.id, ...data }); });
+    folders.sort((a, b) => b.ts - a.ts);
     renderFolders(folders);
+  });
+  const collection = entryCollection();
+  entriesUnsub = db.collection(collection).orderBy("ts", "desc").onSnapshot((snap) => {
+    const entries = []; snap.forEach((doc) => entries.push({ id: doc.id, ...doc.data() }));
+    renderEntries(entries, collection);
   });
 }
 
@@ -432,41 +431,43 @@ function renderFolders(folders) {
     `;
     card.onclick = (e) => {
       if (e.target.closest("[data-delfolder]")) return;
-      openFolder(f.id, f.name);
+      openFolder(f);
     };
     grid.appendChild(card);
   });
   grid.querySelectorAll("[data-delfolder]").forEach((btn) => {
     btn.onclick = async (e) => {
       e.stopPropagation();
-      const folderId = btn.dataset.delfolder;
-      const entriesSnap = await db.collection("routenorte_entries_" + folderId).get();
-      const batch = db.batch();
-      entriesSnap.forEach((doc) => batch.delete(doc.ref));
-      batch.delete(db.collection("routenorte_folders").doc(folderId));
-      await batch.commit();
+      await deleteFolderTree(btn.dataset.delfolder);
     };
   });
 }
 
-function openFolder(id, name) {
-  activeFolder = { id, name };
-  if (entriesUnsub) { entriesUnsub(); entriesUnsub = null; }
-  hide("folders-grid");
-  show("entries-grid");
-  show("folder-back-btn");
-  currentMaxImages = 5;
-  $("board-title-text").textContent = name;
-  $("add-entry-btn").textContent = "+ Neuer Eintrag";
-  $("entries-grid").innerHTML = '<div class="empty-note">Lade Einträge...</div>';
-  const coll = "routenorte_entries_" + id;
-  entriesUnsub = db.collection(coll).orderBy("ts", "desc").onSnapshot((snap) => {
-    const entries = [];
-    snap.forEach((doc) => entries.push({ id: doc.id, ...doc.data() }));
-    renderEntries(entries, coll);
-  });
+async function deleteFolderTree(folderId) {
+  const allFolders = await db.collection(folderCollection()).get();
+  const descendants = [folderId];
+  for (let cursor = 0; cursor < descendants.length; cursor++) {
+    const parentId = descendants[cursor];
+    allFolders.forEach((doc) => { if (doc.data().parentId === parentId) descendants.push(doc.id); });
+  }
+  const refs = [db.collection(folderCollection()).doc(folderId)];
+  for (const id of descendants) {
+    const items = await db.collection(activeCategory + "_entries_" + id).get();
+    items.forEach((doc) => refs.push(doc.ref));
+    if (id !== folderId) refs.push(db.collection(folderCollection()).doc(id));
+  }
+  while (refs.length) {
+    const batch = db.batch(); refs.splice(0, 450).forEach((ref) => batch.delete(ref)); await batch.commit();
+  }
 }
-$("folder-back-btn").onclick = () => showFolderList();
+
+function openFolder(folder) {
+  folderTrail.push(folder);
+  if (entriesUnsub) { entriesUnsub(); entriesUnsub = null; }
+  if (foldersUnsub) { foldersUnsub(); foldersUnsub = null; }
+  showDirectory();
+}
+$("folder-back-btn").onclick = () => { folderTrail.pop(); if (entriesUnsub) entriesUnsub(); if (foldersUnsub) foldersUnsub(); showDirectory(); };
 
 function renderEntries(entries, collectionName) {
   const grid = $("entries-grid");
@@ -508,24 +509,21 @@ $("lightbox").onclick = () => hide("lightbox");
 
 /* ---------------- ADD ENTRY / ADD FOLDER MODALS ---------------- */
 $("add-entry-btn").onclick = () => {
-  if (activeCategory === "routenorte" && !activeFolder) {
-    $("folder-title").value = "";
-    show("add-folder-modal");
-    return;
-  }
   entryImages = [];
   $("entry-text").value = "";
   $("entry-images-label").textContent = `SCREENSHOTS (max. ${currentMaxImages})`;
   renderEntryImages();
   show("add-entry-modal");
 };
+$("add-folder-btn").onclick = () => { $("folder-title").value = ""; show("add-folder-modal"); };
 $("add-entry-close").onclick = () => hide("add-entry-modal");
 $("add-folder-close").onclick = () => hide("add-folder-modal");
 $("form-add-folder").onsubmit = async (e) => {
   e.preventDefault();
   const name = $("folder-title").value.trim();
   if (!name) return;
-  await db.collection("routenorte_folders").add({ name, author: currentUser, ts: Date.now() });
+  const folder = currentFolder();
+  await db.collection(folderCollection()).add({ name, parentId: folder ? folder.id : null, author: currentUser, ts: Date.now() });
   hide("add-folder-modal");
 };
 
@@ -563,7 +561,7 @@ $("form-add-entry").onsubmit = async (e) => {
   e.preventDefault();
   const text = $("entry-text").value.trim();
   if (!text && entryImages.length === 0) return;
-  const targetCollection = activeFolder ? "routenorte_entries_" + activeFolder.id : "entries_" + activeCategory;
+  const targetCollection = entryCollection();
   await db.collection(targetCollection).add({
     text, images: entryImages, author: currentUser, ts: Date.now(),
   });
