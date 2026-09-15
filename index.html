@@ -19,6 +19,15 @@
     margin:0; background:var(--bg); color:var(--ink);
     font-family:'Jost',sans-serif; min-height:100vh;
   }
+  #screen-login, #screen-waiting, #screen-rejected{
+    position:relative; isolation:isolate;
+    background:linear-gradient(90deg,rgba(5,4,2,.78),rgba(5,4,2,.44)),url('syndikat-login.png') center/cover no-repeat;
+  }
+  #screen-login::before, #screen-waiting::before, #screen-rejected::before{
+    content:""; position:absolute; inset:0; z-index:-1;
+    background:radial-gradient(circle at 50% 30%,transparent 0,rgba(0,0,0,.38) 70%);
+  }
+  #screen-login .card{background:rgba(12,10,6,.94);box-shadow:0 22px 70px rgba(0,0,0,.65);}
   .hidden{display:none !important;}
   .cinzel{font-family:'Cinzel',serif;}
   a{color:var(--gold);}
@@ -271,7 +280,10 @@
       <button class="icon-btn hidden" id="folder-back-btn" style="color:var(--gold-bright);font-size:16px;">&#8592;</button>
       <span id="board-title-text"></span>
     </div>
-    <button class="btn btn-solid" id="add-entry-btn">+ Neuer Eintrag</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+      <button class="btn btn-outline" id="add-folder-btn">&#128193; Neuer Ordner</button>
+      <button class="btn btn-solid" id="add-entry-btn">+ Neuer Eintrag</button>
+    </div>
   </div>
   <div class="entries-grid" id="folders-grid"></div>
   <div class="entries-grid" id="entries-grid"></div>
