@@ -6,10 +6,11 @@ const db = firebase.firestore();
 
 const CATEGORIES = [
   { key: "arbeiter", label: "Arbeiter", icon: "👥" },
-  { key: "fraktionlager", label: "Fraktion-Lager", icon: "🏛️" },
-  { key: "routenorte", label: "Routen-Orte", icon: "📍" },
+  { key: "fraktionlager", label: "Fraktion & Lager", icon: "🏛️" },
+  { key: "routenorte", label: "Routen & Orte", icon: "📍" },
   { key: "routenrechner", label: "Routen-Rechner", icon: "🧭" },
   { key: "waffenshop", label: "Waffen-Shop", icon: "🛡️" },
+  { key: "wirtschaft", label: "Wirtschaft", icon: "💼" },
 ];
 
 let usersMap = {};      // icName -> user data
