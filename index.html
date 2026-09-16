@@ -16,7 +16,7 @@
   }
   *{box-sizing:border-box;}
   body{
-    margin:0; background:var(--bg); color:var(--ink);
+    margin:0; background:radial-gradient(ellipse at 72% 8%,rgba(150,104,22,.17),transparent 42%),radial-gradient(ellipse at 10% 90%,rgba(94,57,14,.12),transparent 34%),linear-gradient(135deg,#030302,#0b0803 52%,#050402); color:var(--ink);
     font-family:'Jost',sans-serif; min-height:100vh;
   }
   #screen-login, #screen-waiting, #screen-rejected{
@@ -84,6 +84,7 @@
     font-size:12.5px; color:var(--red-bright); background:rgba(165,69,59,.12);
     border:1px solid rgba(165,69,59,.35); border-radius:3px; padding:8px 10px; margin-bottom:12px;
   }
+  #app-toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);z-index:200;max-width:min(460px,calc(100vw - 32px));padding:11px 15px;border:1px solid var(--gold-dim);border-radius:5px;background:#171108;color:var(--ink);box-shadow:0 12px 38px rgba(0,0,0,.48);font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}#app-toast.show{opacity:1;transform:translate(-50%,0);}#app-toast.error{border-color:var(--red-bright);color:#f0b1a8;}
   .switch-link{ color:var(--gold); cursor:pointer; text-decoration:underline; }
   .spin{ animation:spin 1s linear infinite; display:inline-block; }
   @keyframes spin{ to{ transform:rotate(360deg); } }
@@ -139,6 +140,7 @@
 
   /* ---------- dashboard ---------- */
   #screen-dashboard{ max-width:980px; margin:0 auto; padding:60px 18px 60px; }
+  #screen-dashboard::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:linear-gradient(rgba(4,3,1,.72),rgba(4,3,1,.9)),url('syndikat-login.png') center/cover fixed;opacity:.48;}
   .header-card{
     background:linear-gradient(180deg,var(--panel),var(--panel-soft)); border:1px solid var(--line);
     border-radius:8px; padding:18px 20px; display:flex; align-items:center; justify-content:space-between;
@@ -195,6 +197,7 @@
   .folder-card:hover{ border-color:var(--gold-dim); transform:translateY(-2px); box-shadow:0 10px 24px rgba(0,0,0,.22); }
   .folder-card{transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;}
   .folder-card .folder-title{ font-family:'Cinzel',serif; font-size:15px; color:var(--gold-bright); display:flex; align-items:center; gap:8px; }
+  .entry-actions{display:flex;align-items:center;gap:7px;}.edit-icon{color:var(--gold);font-size:14px!important;}.edit-icon:hover{color:var(--gold-bright);}
   #lightbox{ position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:120; display:flex; align-items:center; justify-content:center; padding:20px; cursor:zoom-out; }
   #lightbox img{ max-width:92vw; max-height:92vh; border-radius:4px; }
 </style>
@@ -203,6 +206,7 @@
 
 <button id="crown-btn" title="Admin-Zugang">&#9813;</button>
 <button id="admin-notify-btn" class="hidden" title="Neue Anmeldungen ansehen">&#128276;<span id="admin-notify-count" class="notify-count hidden">0</span></button>
+<div id="app-toast" role="status"></div>
 
 <!-- LOGIN / REGISTER -->
 <div id="screen-login" class="centered-screen">
@@ -370,6 +374,20 @@
       </div>
       <button type="submit" class="btn btn-solid btn-full">+ Eintrag speichern</button>
     </form>
+  </div>
+</div>
+
+<!-- EDIT FOLDER MODAL -->
+<div id="edit-folder-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:360px;"><div class="modal-head"><div class="modal-title">Ordner bearbeiten</div><button class="icon-btn" id="edit-folder-close">&#10005;</button></div>
+    <form id="form-edit-folder"><label class="field"><div class="field-label">ORDNERNAME</div><input type="text" id="edit-folder-title" /></label><button type="submit" class="btn btn-solid btn-full">&#10003; Änderungen speichern</button></form>
+  </div>
+</div>
+
+<!-- EDIT ENTRY MODAL -->
+<div id="edit-entry-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:440px;"><div class="modal-head"><div class="modal-title">Eintrag bearbeiten</div><button class="icon-btn" id="edit-entry-close">&#10005;</button></div>
+    <form id="form-edit-entry"><label class="field"><div class="field-label">TEXT / NOTIZ</div><textarea id="edit-entry-text" rows="5"></textarea></label><div class="field-label" style="margin:-4px 0 14px;">Vorhandene Screenshots bleiben erhalten.</div><button type="submit" class="btn btn-solid btn-full">&#10003; Änderungen speichern</button></form>
   </div>
 </div>
 
