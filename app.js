@@ -476,7 +476,7 @@ function showRouteCalculator() {
     const rawLabel = item.exchange ? "Wie viel Schwarzgeld hast du?" : `Wie viel ${item.raw} hast du?`;
     return `<section class="calculator-card" data-calculator="${item.key}">
       <div class="calc-title">${item.icon} ${item.name}</div><div class="calc-recipe">${recipe}</div>
-      <div class="calc-fields"><label>${rawLabel}<input type="number" min="0" step="any" value="0" data-role="raw" /></label><label>${priceLabel}<input type="number" min="0" step="any" value="0" data-role="price" /></label><label>Verkaufsbonus (%)<input type="number" min="0" step="any" value="0" data-role="bonus" /></label></div>
+      <div class="calc-fields"><label>${rawLabel}<input type="number" min="0" step="any" value="0" data-role="raw" /></label>${item.exchange ? "" : `<label>Bereits verarbeitet (${item.product})<input type="number" min="0" step="any" value="0" data-role="processed" /></label>`}<label>${priceLabel}<input type="number" min="0" step="any" value="0" data-role="price" /></label><label>Verkaufsbonus (%)<input type="number" min="0" step="any" value="0" data-role="bonus" /></label></div>
       <div class="calc-result"><div><div class="calc-result-label">${item.exchange ? "GRÜNGELD OHNE BONUS" : `MÖGLICHE ${item.product.toUpperCase()}`}</div><div class="calc-result-value green" data-role="units">0</div></div><div><div class="calc-result-label">GESAMTWERT MIT BONUS</div><div class="calc-result-value" data-role="total">0,00</div></div></div>
       <div class="calc-note">${item.exchange ? "Der Bonus wird auf den errechneten Grüngeld-Wert aufgeschlagen." : `Reste unter ${item.ratio} ${item.raw} werden nicht mitgerechnet.`}</div>
     </section>`;
@@ -485,9 +485,10 @@ function showRouteCalculator() {
     const item = ROUTE_CALCULATORS.find((entry) => entry.key === card.dataset.calculator);
     const update = () => {
       const raw = Math.max(0, Number(card.querySelector('[data-role="raw"]').value) || 0);
+      const processed = Math.max(0, Number(card.querySelector('[data-role="processed"]')?.value) || 0);
       const price = Math.max(0, Number(card.querySelector('[data-role="price"]').value) || 0);
       const bonus = Math.max(0, Number(card.querySelector('[data-role="bonus"]').value) || 0);
-      const units = item.exchange ? raw * price : Math.floor(raw / item.ratio);
+      const units = item.exchange ? raw * price : Math.floor(raw / item.ratio) + processed;
       const total = item.exchange ? units * (1 + bonus / 100) : units * price * (1 + bonus / 100);
       card.querySelector('[data-role="units"]').textContent = item.exchange ? formatCalcNumber(units) : formatCalcNumber(units);
       card.querySelector('[data-role="total"]').textContent = formatCalcNumber(total);
