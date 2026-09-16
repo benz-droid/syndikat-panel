@@ -26,6 +26,8 @@ let entryImages = []; // staged base64 images for "add entry" modal
 let currentMaxImages = 3;
 let funkMasked = false; // local-only: hides the funk value from view
 let rememberedUser = localStorage.getItem("syndikat_remembered_user");
+let editingFolder = null;
+let editingEntry = null;
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => $(id).classList.remove("hidden");
@@ -486,10 +488,10 @@ function renderFolders(folders) {
     const canDelete = f.author === currentUser || isAdmin;
     card.innerHTML = `
       <div class="folder-title">&#128193; ${escapeHtml(f.name)}</div>
-      ${canDelete ? `<button class="icon-btn" style="color:var(--red-bright);" data-delfolder="${f.id}">&#128465;</button>` : ""}
+      <div class="entry-actions">${canDelete ? `<button class="icon-btn edit-icon" title="Ordner bearbeiten" data-editfolder="${f.id}">&#9998;</button><button class="icon-btn" style="color:var(--red-bright);" data-delfolder="${f.id}">&#128465;</button>` : ""}</div>
     `;
     card.onclick = (e) => {
-      if (e.target.closest("[data-delfolder]")) return;
+      if (e.target.closest("[data-delfolder], [data-editfolder]")) return;
       openFolder(f);
     };
     grid.appendChild(card);
@@ -500,6 +502,9 @@ function renderFolders(folders) {
       await deleteFolderTree(btn.dataset.delfolder);
       void logActivity("🗑️ Ordner gelöscht", "Ordner inklusive Inhalt entfernt");
     };
+  });
+  grid.querySelectorAll("[data-editfolder]").forEach((btn) => {
+    btn.onclick = (e) => { e.stopPropagation(); const folder = folders.find((item) => item.id === btn.dataset.editfolder); if (!folder) return; editingFolder = folder; $("edit-folder-title").value = folder.name; show("edit-folder-modal"); };
   });
 }
 
@@ -553,7 +558,7 @@ function renderEntries(entries, collectionName) {
         ${e.text ? `<div class="entry-text">${escapeHtml(e.text)}</div>` : ""}
         <div class="entry-meta">
           <span>${escapeHtml(e.author)} · ${new Date(e.ts).toLocaleDateString("de-DE")}</span>
-          ${canDelete ? `<button class="icon-btn" style="color:var(--red-bright);" data-del="${e.id}">&#128465;</button>` : ""}
+          <span class="entry-actions">${canDelete ? `<button class="icon-btn edit-icon" title="Eintrag bearbeiten" data-editentry="${e.id}">&#9998;</button><button class="icon-btn" style="color:var(--red-bright);" data-del="${e.id}">&#128465;</button>` : ""}</span>
         </div>
       </div>`;
     grid.appendChild(card);
@@ -563,6 +568,9 @@ function renderEntries(entries, collectionName) {
   });
   grid.querySelectorAll("[data-del]").forEach((btn) => {
     btn.onclick = async () => { await db.collection(collectionName).doc(btn.dataset.del).delete(); void logActivity("🗑️ Eintrag gelöscht", `Kategorie: ${CATEGORIES.find((c) => c.key === activeCategory).label}`); };
+  });
+  grid.querySelectorAll("[data-editentry]").forEach((btn) => {
+    btn.onclick = () => { const entry = entries.find((item) => item.id === btn.dataset.editentry); if (!entry) return; editingEntry = { id: entry.id, collectionName }; $("edit-entry-text").value = entry.text || ""; show("edit-entry-modal"); };
   });
 }
 $("lightbox").onclick = () => hide("lightbox");
@@ -578,6 +586,8 @@ $("add-entry-btn").onclick = () => {
 $("add-folder-btn").onclick = () => { $("folder-title").value = ""; show("add-folder-modal"); };
 $("add-entry-close").onclick = () => hide("add-entry-modal");
 $("add-folder-close").onclick = () => hide("add-folder-modal");
+$("edit-folder-close").onclick = () => hide("edit-folder-modal");
+$("edit-entry-close").onclick = () => hide("edit-entry-modal");
 $("form-add-folder").onsubmit = async (e) => {
   e.preventDefault();
   const name = $("folder-title").value.trim();
@@ -586,6 +596,11 @@ $("form-add-folder").onsubmit = async (e) => {
   await db.collection(folderCollection()).add({ name, parentId: folder ? folder.id : null, author: currentUser, ts: Date.now() });
   void logActivity("📁 Ordner hinzugefügt", name);
   hide("add-folder-modal");
+};
+$("form-edit-folder").onsubmit = async (e) => {
+  e.preventDefault(); const name = $("edit-folder-title").value.trim(); if (!name || !editingFolder) return;
+  await db.collection(folderCollection()).doc(editingFolder.id).update({ name, editedAt: Date.now(), editedBy: currentUser });
+  void logActivity("✏️ Ordner bearbeitet", `${editingFolder.name} → ${name}`); hide("edit-folder-modal"); editingFolder = null;
 };
 
 function renderEntryImages() {
@@ -628,6 +643,11 @@ $("form-add-entry").onsubmit = async (e) => {
   });
   void logActivity("📝 Eintrag hinzugefügt", `${CATEGORIES.find((c) => c.key === activeCategory).label}${text ? ": " + text.slice(0, 60) : " · Bilder"}`);
   hide("add-entry-modal");
+};
+$("form-edit-entry").onsubmit = async (e) => {
+  e.preventDefault(); if (!editingEntry) return; const text = $("edit-entry-text").value.trim();
+  await db.collection(editingEntry.collectionName).doc(editingEntry.id).update({ text, editedAt: Date.now(), editedBy: currentUser });
+  void logActivity("✏️ Eintrag bearbeitet", text ? text.slice(0, 60) : "Text entfernt"); hide("edit-entry-modal"); editingEntry = null;
 };
 
 /* ---------------- helpers ---------------- */
