@@ -30,6 +30,7 @@ let rememberedUser = localStorage.getItem("syndikat_remembered_user");
 let editingFolder = null;
 let editingEntry = null;
 let toastTimer = null;
+let economyImage = null;
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => $(id).classList.remove("hidden");
@@ -552,7 +553,7 @@ function renderEntries(entries, collectionName) {
   const isAdmin = !!me().rights?.admin;
   entries.forEach((e) => {
     const card = document.createElement("div");
-    card.className = "entry-card";
+    card.className = "entry-card" + (e.economyDate ? " economy-entry" : "");
     let imgsHtml = "";
     if (e.images && e.images.length) {
       imgsHtml = `<div class="entry-imgs">${e.images
@@ -563,6 +564,7 @@ function renderEntries(entries, collectionName) {
     card.innerHTML = `
       ${imgsHtml}
       <div class="entry-body">
+        ${e.economyDate ? `<div class="economy-date">&#128197; Wirtschaft · ${escapeHtml(formatEconomyDate(e.economyDate))}</div>` : ""}
         ${e.text ? `<div class="entry-text">${escapeHtml(e.text)}</div>` : ""}
         <div class="entry-meta">
           <span>${escapeHtml(e.author)} · ${new Date(e.ts).toLocaleDateString("de-DE")}</span>
@@ -585,6 +587,12 @@ $("lightbox").onclick = () => hide("lightbox");
 
 /* ---------------- ADD ENTRY / ADD FOLDER MODALS ---------------- */
 $("add-entry-btn").onclick = () => {
+  if (activeCategory === "wirtschaft") {
+    economyImage = null;
+    $("economy-date").value = new Date().toISOString().slice(0, 10);
+    $("economy-image-preview").src = ""; hide("economy-image-preview"); show("economy-image-pick");
+    $("economy-error").innerHTML = ""; show("add-economy-modal"); return;
+  }
   entryImages = [];
   $("entry-text").value = "";
   $("entry-images-label").textContent = `SCREENSHOTS (max. ${currentMaxImages})`;
@@ -594,6 +602,21 @@ $("add-entry-btn").onclick = () => {
 $("add-folder-btn").onclick = () => { $("folder-title").value = ""; show("add-folder-modal"); };
 $("add-entry-close").onclick = () => hide("add-entry-modal");
 $("add-folder-close").onclick = () => hide("add-folder-modal");
+$("add-economy-close").onclick = () => hide("add-economy-modal");
+$("economy-image-pick").onclick = () => $("economy-file-input").click();
+$("economy-file-input").onchange = async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  economyImage = await compressImage(file, 700, 0.6);
+  $("economy-image-preview").src = economyImage; show("economy-image-preview"); hide("economy-image-pick"); e.target.value = "";
+};
+$("form-add-economy").onsubmit = async (e) => {
+  e.preventDefault(); const date = $("economy-date").value;
+  if (!date || !economyImage) { $("economy-error").innerHTML = '<div class="error-line">Datum und Screenshot sind erforderlich.</div>'; return; }
+  try {
+    await db.collection(entryCollection()).add({ text: "", images: [economyImage], economyDate: date, author: currentUser, ts: Date.now() });
+    void logActivity("📈 Wirtschaftsstand hinzugefügt", formatEconomyDate(date)); hide("add-economy-modal"); notice("📈 Wirtschaftseintrag wurde gespeichert.");
+  } catch (error) { $("economy-error").innerHTML = `<div class="error-line">Speichern fehlgeschlagen: ${escapeHtml(error.message)}</div>`; }
+};
 $("edit-folder-close").onclick = () => hide("edit-folder-modal");
 $("edit-entry-close").onclick = () => hide("edit-entry-modal");
 $("form-add-folder").onsubmit = async (e) => {
@@ -662,6 +685,7 @@ function escapeHtml(str) {
   return String(str || "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 }
 function escapeAttr(str) { return escapeHtml(str); }
+function formatEconomyDate(date) { return new Date(`${date}T12:00:00`).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" }); }
 
 function logActivity(action, detail = "", actor = currentUser || "Führung") {
   return db.collection("activity_log").add({ action, detail, actor, ts: Date.now() }).catch(() => {});
