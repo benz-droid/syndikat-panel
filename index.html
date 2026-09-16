@@ -108,22 +108,23 @@
   }
   .modal-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
   .modal-title{ font-family:'Cinzel',serif; font-size:17px; color:var(--gold-bright); font-weight:600; }
+  .admin-gate-box{max-width:385px!important;padding:0!important;overflow:hidden;background:linear-gradient(145deg,#181108,#0b0906)!important;}.admin-gate-top{position:relative;padding:27px 28px 22px;text-align:center;border-bottom:1px solid var(--line);background:radial-gradient(circle at 50% 0,rgba(201,161,59,.18),transparent 60%);}.admin-gate-seal{width:58px;height:58px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;border:1px solid var(--gold);border-radius:50%;color:var(--gold-bright);font-size:28px;box-shadow:0 0 0 6px rgba(201,161,59,.06),0 8px 25px rgba(0,0,0,.35);}.admin-gate-sub{font-size:10px;letter-spacing:.18em;color:var(--gold-dim);margin-top:7px;}.admin-gate-form{padding:22px 28px 26px;}.admin-gate-note{font-size:11.5px;color:var(--ink-faint);line-height:1.45;text-align:center;margin-top:14px;}
 
   /* ---------- admin panel ---------- */
   #admin-panel{
-    position:fixed; inset:0; background:var(--bg); z-index:90; overflow-y:auto;
+    position:fixed; inset:0; background:linear-gradient(rgba(4,3,1,.82),rgba(4,3,1,.94)),url('dashboard-operations.png') center/cover fixed; z-index:90; overflow-y:auto;
   }
   .admin-wrap{ max-width:780px; margin:0 auto; padding:28px 20px 60px; }
-  .admin-hero{position:relative;overflow:hidden;padding:24px 24px 22px;margin-bottom:18px;border:1px solid var(--line);border-radius:9px;background:linear-gradient(115deg,rgba(201,161,59,.14),transparent 42%),linear-gradient(180deg,#171209,#0e0b07);}
-  .admin-hero::after{content:"♛";position:absolute;right:22px;bottom:-18px;font-size:106px;line-height:1;color:rgba(201,161,59,.08);}
-  .admin-eyebrow{font-size:10px;letter-spacing:.23em;color:var(--gold);margin-bottom:7px;}.admin-main-title{font-family:'Cinzel',serif;font-size:25px;color:var(--gold-bright);}.admin-description{position:relative;z-index:1;max-width:470px;font-size:13px;color:var(--ink-dim);line-height:1.55;margin-top:7px;}
-  .admin-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px 0 20px;}.admin-stat{background:var(--panel);border:1px solid var(--line-soft);border-radius:6px;padding:13px 14px;}.admin-stat-number{font-family:'Cinzel',serif;font-size:23px;color:var(--gold-bright);}.admin-stat-label{font-size:10px;letter-spacing:.08em;color:var(--ink-faint);margin-top:3px;}
+  .admin-hero{position:relative;overflow:hidden;padding:30px 30px 27px;margin-bottom:18px;border:1px solid rgba(201,161,59,.52);border-radius:12px;background:linear-gradient(105deg,rgba(201,161,59,.22),transparent 52%),linear-gradient(180deg,rgba(25,18,9,.97),rgba(9,7,4,.97));box-shadow:0 20px 50px rgba(0,0,0,.32);}
+  .admin-hero::after{content:"♛";position:absolute;right:22px;bottom:-23px;font-size:134px;line-height:1;color:rgba(201,161,59,.10);}.admin-hero::before{content:"AUTORISIERTE FÜHRUNG";position:absolute;right:29px;top:22px;font:10px 'Jost',sans-serif;letter-spacing:.16em;color:rgba(233,199,101,.55);}
+  .admin-eyebrow{font-size:10px;letter-spacing:.23em;color:var(--gold);margin-bottom:8px;}.admin-main-title{font-family:'Cinzel',serif;font-size:29px;letter-spacing:.06em;color:var(--gold-bright);text-shadow:0 3px 20px rgba(201,161,59,.22);}.admin-description{position:relative;z-index:1;max-width:470px;font-size:13px;color:var(--ink-dim);line-height:1.55;margin-top:9px;}
+  .admin-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin:16px 0 22px;}.admin-stat{position:relative;overflow:hidden;background:linear-gradient(145deg,rgba(24,18,10,.96),rgba(11,9,5,.96));border:1px solid var(--line);border-radius:8px;padding:15px 16px;box-shadow:0 10px 28px rgba(0,0,0,.2);}.admin-stat::after{content:"";position:absolute;left:0;top:0;width:3px;height:100%;background:var(--gold);}.admin-stat-number{font-family:'Cinzel',serif;font-size:27px;color:var(--gold-bright);}.admin-stat-label{font-size:10px;letter-spacing:.1em;color:var(--ink-faint);margin-top:4px;}
   .admin-tabs{ display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
   .admin-tab{
     font-family:'Jost',sans-serif; font-size:13px; font-weight:600; padding:8px 14px;
     border-radius:3px; cursor:pointer; border:1px solid var(--line); background:transparent; color:var(--ink-dim);
   }
-  .admin-tab.active{ border-color:var(--gold); background:rgba(201,161,59,.12); color:var(--gold-bright); box-shadow:0 5px 18px rgba(0,0,0,.18); }
+  .admin-tab.active{ border-color:var(--gold); background:linear-gradient(135deg,rgba(201,161,59,.27),rgba(201,161,59,.08)); color:var(--gold-bright); box-shadow:0 5px 18px rgba(0,0,0,.18); }
   .row-card{
     background:var(--panel); border:1px solid var(--line-soft); border-radius:5px; padding:12px 14px;
     display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;
@@ -327,15 +328,18 @@
 
 <!-- ADMIN GATE MODAL -->
 <div id="admin-gate" class="modal-overlay hidden">
-  <div class="modal-box" style="max-width:320px;">
-    <div class="modal-head">
-      <div class="modal-title">Admin-Zugang</div>
-      <button class="icon-btn" id="admin-gate-close">&#10005;</button>
+  <div class="modal-box admin-gate-box">
+    <div class="admin-gate-top">
+      <button class="icon-btn" id="admin-gate-close" style="position:absolute;right:14px;top:14px;color:var(--ink-dim);">&#10005;</button>
+      <div class="admin-gate-seal">&#9813;</div>
+      <div class="modal-title" style="font-size:21px;letter-spacing:.08em;">FÜHRUNGSZUGANG</div>
+      <div class="admin-gate-sub">SYNDIKAT · OPERATIONS-NETZWERK</div>
     </div>
-    <form id="form-admin-gate">
+    <form id="form-admin-gate" class="admin-gate-form">
       <label class="field"><div class="field-label">PASSWORT</div><input type="password" id="admin-pw" placeholder="••••" /></label>
       <div id="admin-gate-error"></div>
-      <button type="submit" class="btn btn-solid btn-full">Bestätigen</button>
+      <button type="submit" class="btn btn-solid btn-full">&#128274; FÜHRUNGSZENTRALE ÖFFNEN</button>
+      <div class="admin-gate-note">Dieser Bereich ist nur für autorisierte Mitglieder der Führung zugänglich.</div>
     </form>
   </div>
 </div>
