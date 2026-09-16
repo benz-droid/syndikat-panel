@@ -13,6 +13,16 @@ const CATEGORIES = [
   { key: "wirtschaft", label: "Wirtschaft", icon: "💼" },
 ];
 
+const ROUTE_CALCULATORS = [
+  { key: "weed", icon: "🌿", name: "Weed", raw: "Hanf", ratio: 5, product: "Joint" },
+  { key: "bufo", icon: "🐸", name: "Bufo", raw: "Erdkröten", ratio: 5, product: "Bufotenin" },
+  { key: "opium", icon: "🌺", name: "Opium", raw: "Schlafmohn", ratio: 10, product: "Opium" },
+  { key: "meth", icon: "⚗️", name: "Meth", raw: "Ephedrin", ratio: 10, product: "Meth" },
+  { key: "kokain", icon: "🍃", name: "Kokain", raw: "Kokablätter", ratio: 10, product: "Kokain" },
+  { key: "schwarzgeld", icon: "💱", name: "Schwarzgeld", raw: "Schwarzgeld", ratio: 1, product: "Grüngeld", exchange: true },
+  { key: "westen", icon: "🦺", name: "Westen", raw: "Kevlarfasern", ratio: 32, product: "Weste" },
+];
+
 let usersMap = {};      // icName -> user data
 let requestsList = [];  // [{icName, password, rang, ts}]
 let funkState = { value: "" };
@@ -449,7 +459,41 @@ function switchCategory(key) {
   document.querySelectorAll(".cat-tab").forEach((b, i) => b.classList.toggle("active", CATEGORIES[i].key === key));
   if (entriesUnsub) { entriesUnsub(); entriesUnsub = null; }
   if (foldersUnsub) { foldersUnsub(); foldersUnsub = null; }
+  if (key === "routenrechner") { showRouteCalculator(); return; }
   showDirectory();
+}
+
+function showRouteCalculator() {
+  hide("folder-back-btn"); hide("folders-grid"); hide("add-entry-btn"); hide("add-folder-btn"); show("entries-grid");
+  $("board-title-text").textContent = "Routen-Rechner";
+  const grid = $("entries-grid");
+  grid.className = "calculator-grid";
+  grid.innerHTML = ROUTE_CALCULATORS.map((item) => {
+    const recipe = item.exchange
+      ? "Direkter Umrechnungskurs: 1 Schwarzgeld = frei wählbarer Grüngeld-Kurs"
+      : `${item.ratio} ${item.raw}  →  1 ${item.product}`;
+    const priceLabel = item.exchange ? "Kurs pro Schwarzgeld (Grüngeld)" : `Wert pro ${item.product}`;
+    const rawLabel = item.exchange ? "Wie viel Schwarzgeld hast du?" : `Wie viel ${item.raw} hast du?`;
+    return `<section class="calculator-card" data-calculator="${item.key}">
+      <div class="calc-title">${item.icon} ${item.name}</div><div class="calc-recipe">${recipe}</div>
+      <div class="calc-fields"><label>${rawLabel}<input type="number" min="0" step="any" value="0" data-role="raw" /></label><label>${priceLabel}<input type="number" min="0" step="any" value="0" data-role="price" /></label><label>Verkaufsbonus (%)<input type="number" min="0" step="any" value="0" data-role="bonus" /></label></div>
+      <div class="calc-result"><div><div class="calc-result-label">${item.exchange ? "GRÜNGELD OHNE BONUS" : `MÖGLICHE ${item.product.toUpperCase()}`}</div><div class="calc-result-value green" data-role="units">0</div></div><div><div class="calc-result-label">GESAMTWERT MIT BONUS</div><div class="calc-result-value" data-role="total">0,00</div></div></div>
+      <div class="calc-note">${item.exchange ? "Der Bonus wird auf den errechneten Grüngeld-Wert aufgeschlagen." : `Reste unter ${item.ratio} ${item.raw} werden nicht mitgerechnet.`}</div>
+    </section>`;
+  }).join("");
+  grid.querySelectorAll("[data-calculator]").forEach((card) => {
+    const item = ROUTE_CALCULATORS.find((entry) => entry.key === card.dataset.calculator);
+    const update = () => {
+      const raw = Math.max(0, Number(card.querySelector('[data-role="raw"]').value) || 0);
+      const price = Math.max(0, Number(card.querySelector('[data-role="price"]').value) || 0);
+      const bonus = Math.max(0, Number(card.querySelector('[data-role="bonus"]').value) || 0);
+      const units = item.exchange ? raw * price : Math.floor(raw / item.ratio);
+      const total = item.exchange ? units * (1 + bonus / 100) : units * price * (1 + bonus / 100);
+      card.querySelector('[data-role="units"]').textContent = item.exchange ? formatCalcNumber(units) : formatCalcNumber(units);
+      card.querySelector('[data-role="total"]').textContent = formatCalcNumber(total);
+    };
+    card.querySelectorAll("input").forEach((input) => input.addEventListener("input", update)); update();
+  });
 }
 
 function folderCollection() { return activeCategory + "_folders"; }
@@ -463,7 +507,8 @@ function showDirectory() {
   const folder = currentFolder();
   $("board-title-text").textContent = folder ? folder.name : CATEGORIES.find((c) => c.key === activeCategory).label;
   $("folder-back-btn").classList.toggle("hidden", folderTrail.length === 0);
-  show("folders-grid"); show("entries-grid");
+  show("add-entry-btn"); show("add-folder-btn");
+  show("folders-grid"); show("entries-grid"); $("entries-grid").className = "entries-grid";
   currentMaxImages = folder ? 5 : 3;
   $("folders-grid").innerHTML = '<div class="empty-note">Lade Ordner...</div>';
   $("entries-grid").innerHTML = '<div class="empty-note">Lade Einträge...</div>';
@@ -686,6 +731,7 @@ function escapeHtml(str) {
 }
 function escapeAttr(str) { return escapeHtml(str); }
 function formatEconomyDate(date) { return new Date(`${date}T12:00:00`).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" }); }
+function formatCalcNumber(value) { return Number(value || 0).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
 
 function logActivity(action, detail = "", actor = currentUser || "Führung") {
   return db.collection("activity_log").add({ action, detail, actor, ts: Date.now() }).catch(() => {});
@@ -697,4 +743,3 @@ function notice(message, isError = false) {
 
 /* ---------------- boot ---------------- */
 showScreen("login");
-
