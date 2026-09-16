@@ -697,3 +697,4 @@ function notice(message, isError = false) {
 
 /* ---------------- boot ---------------- */
 showScreen("login");
+
