@@ -21,7 +21,7 @@
   }
   #screen-login, #screen-waiting, #screen-rejected{
     position:relative; isolation:isolate;
-    background:radial-gradient(circle at 72% 18%,rgba(201,161,59,.16),transparent 27%),radial-gradient(circle at 18% 88%,rgba(115,71,14,.14),transparent 31%),linear-gradient(135deg,#050403,#100b04 52%,#050403);
+    background:linear-gradient(90deg,rgba(3,2,1,.74),rgba(3,2,1,.42)),url('login-lounge.png') center/cover no-repeat;
   }
   #screen-login::before, #screen-waiting::before, #screen-rejected::before{
     content:""; position:absolute; inset:0; z-index:-1;
@@ -139,7 +139,7 @@
   .toggle-wrap{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-dim); }
 
   /* ---------- dashboard ---------- */
-  body:has(#screen-dashboard:not(.hidden)){background:linear-gradient(rgba(4,3,1,.64),rgba(4,3,1,.88)),url('syndikat-login.png') center/cover fixed no-repeat;}
+  body.dashboard-active{background:linear-gradient(rgba(4,3,1,.70),rgba(4,3,1,.87)),url('dashboard-operations.png') center/cover fixed no-repeat;}
   #screen-dashboard{ max-width:980px; margin:0 auto; padding:60px 18px 60px; }
   .header-card{
     background:linear-gradient(180deg,var(--panel),var(--panel-soft)); border:1px solid var(--line);
