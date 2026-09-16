@@ -28,6 +28,7 @@ let funkMasked = false; // local-only: hides the funk value from view
 let rememberedUser = localStorage.getItem("syndikat_remembered_user");
 let editingFolder = null;
 let editingEntry = null;
+let toastTimer = null;
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => $(id).classList.remove("hidden");
@@ -79,6 +80,9 @@ db.collection("meta").doc("funk").onSnapshot((doc) => {
 db.collection("activity_log").orderBy("ts", "desc").limit(80).onSnapshot((snap) => {
   activityLog = [];
   snap.forEach((doc) => activityLog.push({ id: doc.id, ...doc.data() }));
+  if (adminUnlocked) renderAdminPanel();
+}, () => {
+  activityLog = [{ action: "⚠️ Protokoll nicht verfügbar", detail: "Firebase erlaubt das Lesen der Logs noch nicht.", actor: "System", ts: Date.now() }];
   if (adminUnlocked) renderAdminPanel();
 });
 
@@ -593,14 +597,14 @@ $("form-add-folder").onsubmit = async (e) => {
   const name = $("folder-title").value.trim();
   if (!name) return;
   const folder = currentFolder();
-  await db.collection(folderCollection()).add({ name, parentId: folder ? folder.id : null, author: currentUser, ts: Date.now() });
-  void logActivity("📁 Ordner hinzugefügt", name);
-  hide("add-folder-modal");
+  try {
+    await db.collection(folderCollection()).add({ name, parentId: folder ? folder.id : null, author: currentUser, ts: Date.now() });
+    void logActivity("📁 Ordner hinzugefügt", name); hide("add-folder-modal"); notice("📁 Ordner wurde erstellt.");
+  } catch (error) { notice(`Ordner konnte nicht gespeichert werden: ${error.message}`, true); }
 };
 $("form-edit-folder").onsubmit = async (e) => {
   e.preventDefault(); const name = $("edit-folder-title").value.trim(); if (!name || !editingFolder) return;
-  await db.collection(folderCollection()).doc(editingFolder.id).update({ name, editedAt: Date.now(), editedBy: currentUser });
-  void logActivity("✏️ Ordner bearbeitet", `${editingFolder.name} → ${name}`); hide("edit-folder-modal"); editingFolder = null;
+  try { await db.collection(folderCollection()).doc(editingFolder.id).update({ name, editedAt: Date.now(), editedBy: currentUser }); void logActivity("✏️ Ordner bearbeitet", `${editingFolder.name} → ${name}`); hide("edit-folder-modal"); editingFolder = null; notice("✏️ Ordner wurde bearbeitet."); } catch (error) { notice(`Ordner konnte nicht bearbeitet werden: ${error.message}`, true); }
 };
 
 function renderEntryImages() {
@@ -638,16 +642,15 @@ $("form-add-entry").onsubmit = async (e) => {
   const text = $("entry-text").value.trim();
   if (!text && entryImages.length === 0) return;
   const targetCollection = entryCollection();
-  await db.collection(targetCollection).add({
-    text, images: entryImages, author: currentUser, ts: Date.now(),
-  });
-  void logActivity("📝 Eintrag hinzugefügt", `${CATEGORIES.find((c) => c.key === activeCategory).label}${text ? ": " + text.slice(0, 60) : " · Bilder"}`);
-  hide("add-entry-modal");
+  try {
+    await db.collection(targetCollection).add({ text, images: entryImages, author: currentUser, ts: Date.now() });
+    void logActivity("📝 Eintrag hinzugefügt", `${CATEGORIES.find((c) => c.key === activeCategory).label}${text ? ": " + text.slice(0, 60) : " · Bilder"}`);
+    hide("add-entry-modal"); notice("📝 Eintrag wurde gespeichert.");
+  } catch (error) { notice(`Eintrag konnte nicht gespeichert werden: ${error.message}`, true); }
 };
 $("form-edit-entry").onsubmit = async (e) => {
   e.preventDefault(); if (!editingEntry) return; const text = $("edit-entry-text").value.trim();
-  await db.collection(editingEntry.collectionName).doc(editingEntry.id).update({ text, editedAt: Date.now(), editedBy: currentUser });
-  void logActivity("✏️ Eintrag bearbeitet", text ? text.slice(0, 60) : "Text entfernt"); hide("edit-entry-modal"); editingEntry = null;
+  try { await db.collection(editingEntry.collectionName).doc(editingEntry.id).update({ text, editedAt: Date.now(), editedBy: currentUser }); void logActivity("✏️ Eintrag bearbeitet", text ? text.slice(0, 60) : "Text entfernt"); hide("edit-entry-modal"); editingEntry = null; notice("✏️ Eintrag wurde bearbeitet."); } catch (error) { notice(`Eintrag konnte nicht bearbeitet werden: ${error.message}`, true); }
 };
 
 /* ---------------- helpers ---------------- */
@@ -658,6 +661,10 @@ function escapeAttr(str) { return escapeHtml(str); }
 
 function logActivity(action, detail = "", actor = currentUser || "Führung") {
   return db.collection("activity_log").add({ action, detail, actor, ts: Date.now() }).catch(() => {});
+}
+function notice(message, isError = false) {
+  const toast = $("app-toast"); toast.textContent = message; toast.classList.toggle("error", isError); toast.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove("show"), 5000);
 }
 
 /* ---------------- boot ---------------- */
