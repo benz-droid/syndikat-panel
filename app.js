@@ -106,6 +106,7 @@ let pendingWatchName = null;
 
 /* ---------------- screen switching ---------------- */
 function showScreen(name) {
+  document.body.classList.remove("dashboard-active");
   ["login", "waiting", "rejected"].forEach((s) => hide("screen-" + s));
   hide("screen-dashboard");
   if (name) show("screen-" + name);
@@ -323,6 +324,7 @@ function enterDashboard() {
   showScreen(null);
   hide("admin-panel");
   show("screen-dashboard");
+  document.body.classList.add("dashboard-active");
   renderDashboardHeader();
   renderAdminBell();
   buildCategoryTabs();
@@ -331,6 +333,7 @@ function enterDashboard() {
 
 $("logout-btn").onclick = () => {
   currentUser = null;
+  document.body.classList.remove("dashboard-active");
   localStorage.removeItem("syndikat_remembered_user");
   hide("admin-notify-btn");
   if (entriesUnsub) entriesUnsub();
