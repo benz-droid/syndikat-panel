@@ -15,6 +15,7 @@ const CATEGORIES = [
 let usersMap = {};      // icName -> user data
 let requestsList = [];  // [{icName, password, rang, ts}]
 let funkState = { value: "" };
+let activityLog = [];
 let currentUser = null; // icName of logged in user
 let adminUnlocked = false;
 let activeCategory = CATEGORIES[0].key;
@@ -66,6 +67,11 @@ db.collection("requests").onSnapshot((snap) => {
 db.collection("meta").doc("funk").onSnapshot((doc) => {
   funkState = doc.exists ? doc.data() : { value: "" };
   renderFunk();
+});
+db.collection("activity_log").orderBy("ts", "desc").limit(80).onSnapshot((snap) => {
+  activityLog = [];
+  snap.forEach((doc) => activityLog.push({ id: doc.id, ...doc.data() }));
+  if (adminUnlocked) renderAdminPanel();
 });
 
 function onUsersOrRequestsChanged() {
@@ -149,6 +155,7 @@ $("form-register").onsubmit = async (e) => {
     return;
   }
   await db.collection("requests").doc(icName).set({ password, rang, ts: Date.now() });
+  void logActivity("📨 Anmeldung beantragt", `Name: ${icName} · Rang: ${rang}`);
   pendingWatchName = icName;
   $("waiting-name").textContent = icName;
   showScreen("waiting");
@@ -183,7 +190,7 @@ document.querySelectorAll(".admin-tab").forEach((btn) => {
   btn.onclick = () => {
     document.querySelectorAll(".admin-tab").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
-    ["requests", "users", "funk"].forEach((t) => {
+    ["requests", "users", "funk", "logs"].forEach((t) => {
       $("admin-tab-" + t).classList.toggle("hidden", t !== btn.dataset.tab);
     });
   };
@@ -193,6 +200,7 @@ function renderAdminPanel() {
   $("tab-requests-btn").textContent = `📋 Anfragen (${requestsList.length})`;
   const userEntries = Object.entries(usersMap);
   $("tab-users-btn").textContent = `👥 Nutzer & Rechte (${userEntries.length})`;
+  $("tab-logs-btn").textContent = `📜 Protokoll (${activityLog.length})`;
   const adminCount = userEntries.filter(([, user]) => user.rights?.admin).length;
   $("admin-summary").innerHTML = `
     <div class="admin-stat"><div class="admin-stat-number">${requestsList.length}</div><div class="admin-stat-label">OFFENE ANFRAGEN</div></div>
@@ -248,6 +256,13 @@ function renderAdminPanel() {
   userBox.querySelectorAll("[data-remove]").forEach((b) => (b.onclick = () => removeUser(b.dataset.remove)));
 
   $("admin-funk-input").value = funkState.value || "";
+  const logBox = $("admin-tab-logs");
+  if (!activityLog.length) {
+    logBox.innerHTML = '<div class="empty-note">Noch keine Aktivitäten protokolliert.</div>';
+  } else {
+    logBox.innerHTML = `<div class="log-list">${activityLog.map((entry) => `
+      <div class="log-item"><div class="log-icon">${escapeHtml(entry.icon || "•")}</div><div><div class="log-action">${escapeHtml(entry.action)}</div><div class="log-detail">${escapeHtml(entry.actor || "System")}${entry.detail ? " · " + escapeHtml(entry.detail) : ""}</div></div><div class="log-time">${new Date(entry.ts).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}</div></div>`).join("")}</div>`;
+  }
 }
 
 async function approveRequest(icName) {
@@ -263,9 +278,11 @@ async function approveRequest(icName) {
     joined: Date.now(),
   });
   await db.collection("requests").doc(icName).delete();
+  void logActivity("✅ Anmeldung angenommen", `Mitglied: ${icName}`);
 }
 async function rejectRequest(icName) {
   await db.collection("requests").doc(icName).delete();
+  void logActivity("❌ Anmeldung abgelehnt", `Anfrage: ${icName}`);
 }
 async function toggleRight(icName, right) {
   const u = usersMap[icName];
@@ -273,12 +290,15 @@ async function toggleRight(icName, right) {
   const rights = { ...(u.rights || {}) };
   rights[right] = !rights[right];
   await db.collection("users").doc(icName).update({ rights });
+  void logActivity("🔐 Berechtigung geändert", `${icName}: ${right} ${rights[right] ? "aktiviert" : "deaktiviert"}`);
 }
 async function removeUser(icName) {
   await db.collection("users").doc(icName).delete();
+  void logActivity("🗑️ Mitglied entfernt", icName);
 }
 $("admin-funk-save").onclick = async () => {
   await db.collection("meta").doc("funk").set({ value: $("admin-funk-input").value, updatedBy: "Admin", ts: Date.now() });
+  void logActivity("📡 Funk geändert", $("admin-funk-input").value || "Funk gelöscht");
 };
 
 /* ---------------- DASHBOARD ---------------- */
@@ -463,6 +483,7 @@ function renderFolders(folders) {
     btn.onclick = async (e) => {
       e.stopPropagation();
       await deleteFolderTree(btn.dataset.delfolder);
+      void logActivity("🗑️ Ordner gelöscht", "Ordner inklusive Inhalt entfernt");
     };
   });
 }
@@ -526,7 +547,7 @@ function renderEntries(entries, collectionName) {
     img.onclick = () => { $("lightbox-img").src = img.dataset.lightbox; show("lightbox"); };
   });
   grid.querySelectorAll("[data-del]").forEach((btn) => {
-    btn.onclick = () => db.collection(collectionName).doc(btn.dataset.del).delete();
+    btn.onclick = async () => { await db.collection(collectionName).doc(btn.dataset.del).delete(); void logActivity("🗑️ Eintrag gelöscht", `Kategorie: ${CATEGORIES.find((c) => c.key === activeCategory).label}`); };
   });
 }
 $("lightbox").onclick = () => hide("lightbox");
@@ -548,6 +569,7 @@ $("form-add-folder").onsubmit = async (e) => {
   if (!name) return;
   const folder = currentFolder();
   await db.collection(folderCollection()).add({ name, parentId: folder ? folder.id : null, author: currentUser, ts: Date.now() });
+  void logActivity("📁 Ordner hinzugefügt", name);
   hide("add-folder-modal");
 };
 
@@ -589,6 +611,7 @@ $("form-add-entry").onsubmit = async (e) => {
   await db.collection(targetCollection).add({
     text, images: entryImages, author: currentUser, ts: Date.now(),
   });
+  void logActivity("📝 Eintrag hinzugefügt", `${CATEGORIES.find((c) => c.key === activeCategory).label}${text ? ": " + text.slice(0, 60) : " · Bilder"}`);
   hide("add-entry-modal");
 };
 
@@ -597,6 +620,10 @@ function escapeHtml(str) {
   return String(str || "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 }
 function escapeAttr(str) { return escapeHtml(str); }
+
+function logActivity(action, detail = "") {
+  return db.collection("activity_log").add({ action, detail, actor: currentUser || "Führung", ts: Date.now() }).catch(() => {});
+}
 
 /* ---------------- boot ---------------- */
 showScreen("login");
