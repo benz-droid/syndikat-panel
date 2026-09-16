@@ -200,7 +200,7 @@ $("form-admin-gate").onsubmit = (e) => {
 $("admin-back").onclick = () => {
   adminUnlocked = false;
   hide("admin-panel");
-  if (currentUser) { show("screen-dashboard"); } else { showScreen("login"); }
+  if (currentUser) { show("screen-dashboard"); document.body.classList.add("dashboard-active"); } else { showScreen("login"); }
 };
 
 /* ---------------- ADMIN PANEL ---------------- */
