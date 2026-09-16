@@ -25,6 +25,7 @@ let folderTrail = []; // beliebig tiefer Ordnerpfad innerhalb einer Kategorie
 let entryImages = []; // staged base64 images for "add entry" modal
 let currentMaxImages = 3;
 let funkMasked = false; // local-only: hides the funk value from view
+let rememberedUser = localStorage.getItem("syndikat_remembered_user");
 
 const $ = (id) => document.getElementById(id);
 const show = (id) => $(id).classList.remove("hidden");
@@ -57,6 +58,11 @@ function compressImage(file, maxW = 500, quality = 0.55) {
 db.collection("users").onSnapshot((snap) => {
   usersMap = {};
   snap.forEach((doc) => (usersMap[doc.id] = doc.data()));
+  if (!currentUser && rememberedUser && usersMap[rememberedUser]) {
+    currentUser = rememberedUser;
+    rememberedUser = null;
+    enterDashboard();
+  }
   onUsersOrRequestsChanged();
 });
 db.collection("requests").onSnapshot((snap) => {
@@ -136,6 +142,11 @@ $("form-login").onsubmit = async (e) => {
     return;
   }
   currentUser = icName;
+  if ($("remember-login").checked) {
+    localStorage.setItem("syndikat_remembered_user", icName);
+  } else {
+    localStorage.removeItem("syndikat_remembered_user");
+  }
   enterDashboard();
 };
 
@@ -155,7 +166,7 @@ $("form-register").onsubmit = async (e) => {
     return;
   }
   await db.collection("requests").doc(icName).set({ password, rang, ts: Date.now() });
-  void logActivity("📨 Anmeldung beantragt", `Name: ${icName} · Rang: ${rang}`);
+  void logActivity("📨 Anmeldung beantragt", `Name: ${icName} · Rang: ${rang}`, icName);
   pendingWatchName = icName;
   $("waiting-name").textContent = icName;
   showScreen("waiting");
@@ -314,6 +325,7 @@ function enterDashboard() {
 
 $("logout-btn").onclick = () => {
   currentUser = null;
+  localStorage.removeItem("syndikat_remembered_user");
   hide("admin-notify-btn");
   if (entriesUnsub) entriesUnsub();
   hide("screen-dashboard");
@@ -364,6 +376,7 @@ $("avatar-input").onchange = async (e) => {
   if (!file || !currentUser) return;
   const dataUrl = await compressImage(file, 200, 0.6);
   await db.collection("users").doc(currentUser).update({ avatar: dataUrl });
+  void logActivity("🖼️ Profilbild geändert", "Profil aktualisiert");
 };
 
 $("bio-display").onclick = () => {
@@ -374,6 +387,7 @@ $("bio-display").onclick = () => {
 $("bio-cancel").onclick = () => { hide("bio-edit"); show("bio-display"); };
 $("bio-save").onclick = async () => {
   await db.collection("users").doc(currentUser).update({ bio: $("bio-input").value });
+  void logActivity("✏️ Status geändert", $("bio-input").value || "Status entfernt");
   hide("bio-edit"); show("bio-display");
 };
 
@@ -395,6 +409,7 @@ $("funk-cancel-btn").onclick = () => {
 };
 $("funk-save-btn").onclick = async () => {
   await db.collection("meta").doc("funk").set({ value: $("funk-input").value, updatedBy: currentUser, ts: Date.now() });
+  void logActivity("📡 Funk geändert", $("funk-input").value || "Funk gelöscht");
   hide("funk-input"); hide("funk-save-btn"); hide("funk-cancel-btn");
   show("funk-display"); show("funk-edit-btn");
 };
@@ -621,8 +636,8 @@ function escapeHtml(str) {
 }
 function escapeAttr(str) { return escapeHtml(str); }
 
-function logActivity(action, detail = "") {
-  return db.collection("activity_log").add({ action, detail, actor: currentUser || "Führung", ts: Date.now() }).catch(() => {});
+function logActivity(action, detail = "", actor = currentUser || "Führung") {
+  return db.collection("activity_log").add({ action, detail, actor, ts: Date.now() }).catch(() => {});
 }
 
 /* ---------------- boot ---------------- */
