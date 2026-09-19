@@ -30,7 +30,9 @@
   #screen-login .card{background:rgba(12,10,6,.94);box-shadow:0 22px 70px rgba(0,0,0,.65);}
   .login-card{max-width:440px!important;padding:34px 32px!important;position:relative;overflow:hidden;}
   .login-card::before{content:"";position:absolute;top:0;left:50%;width:160px;height:1px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,var(--gold-bright),transparent);}
-  .brand-crown{font-size:34px;line-height:1;color:var(--gold-bright);filter:drop-shadow(0 3px 8px rgba(255,255,255,.35));}
+  .brand-crown{height:34px;line-height:1;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 3px 8px rgba(255,255,255,.20));}
+  .italy-mark{display:inline-block;width:42px;height:27px;border:1px solid rgba(255,255,255,.90);border-radius:2px;background:linear-gradient(90deg,#008c45 0 33.333%,#ffffff 33.333% 66.666%,#cd212a 66.666% 100%);box-shadow:0 3px 12px rgba(0,0,0,.45);}
+  .italy-mark-small{width:19px;height:13px;border-radius:1px;box-shadow:none;}
   .brand-name{font-size:31px!important;letter-spacing:.13em;text-indent:.13em;text-shadow:0 2px 18px rgba(255,255,255,.24);}
   .brand-kicker{font-size:10px;letter-spacing:.28em;color:var(--gold);margin-top:8px;text-indent:.28em;}
   .brand-rule{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--gold-dim);font-size:10px;letter-spacing:.18em;margin:17px 0 19px;}
@@ -208,7 +210,7 @@
 </head>
 <body>
 
-<button id="crown-btn" title="Führungszentrale">&#127470;&#127481;</button>
+<button id="crown-btn" title="Führungszentrale"><span class="italy-mark italy-mark-small" aria-label="Italien"></span></button>
 <button id="admin-notify-btn" class="hidden" title="Neue Anmeldungen ansehen">&#128276;<span id="admin-notify-count" class="notify-count hidden">0</span></button>
 <div id="app-toast" role="status"></div>
 
@@ -216,7 +218,7 @@
 <div id="screen-login" class="centered-screen">
   <div class="card login-card">
     <div style="text-align:center;margin-bottom:26px;">
-      <div class="brand-crown">&#127470;&#127481;</div>
+      <div class="brand-crown"><span class="italy-mark" aria-label="Italien"></span></div>
       <div class="cinzel brand-name" style="color:var(--gold-bright);">CAMORRA</div>
       <div class="brand-kicker">OPERATIONS-NETZWERK</div>
       <div class="brand-rule">VERTRAUEN · LOYALITÄT · MACHT</div>
