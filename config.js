@@ -1,8 +1,4 @@
-// ---------------------------------------------------------------
-// Trage hier die Config aus deinem Firebase-Projekt ein.
-// Firebase-Konsole -> Projekteinstellungen -> "Meine Apps" -> Web-App
-// Anleitung dazu steht in README.md
-// ---------------------------------------------------------------
+// Firebase-Konfiguration des BLOC13-Panels
 const firebaseConfig = {
   apiKey: "AIzaSyDoyA3XrWN71z4eRUBjkQs8tbLKaNVXNjs",
   authDomain: "crowns-bff8e.firebaseapp.com",
@@ -12,6 +8,14 @@ const firebaseConfig = {
   appId: "1:635150952498:web:4ae8c6a33c0484c0a4f42b",
 };
 
-// Admin-Passwort fuer die Krone oben links.
-// Aendere das auf einen eigenen Wert bevor du live gehst.
+// Admin-Passwort: vor dem Livegang bitte auf einen eigenen Wert ändern.
 const ADMIN_PASSWORD = "5830";
+
+// Verstecktes Dankeschön für die Chefin. Die Buchstaben ALINA nacheinander
+// auf der Website eingeben (nicht in einem Eingabefeld), um es zu öffnen.
+const BLOC13_EASTER_EGG = {
+  name: "ALINA",
+  sequence: "alina",
+  title: "DIE 13 GEHÖRT DER CHEFIN",
+  message: "Respekt für Alina — die Person, die den Block zusammenhält.",
+};
