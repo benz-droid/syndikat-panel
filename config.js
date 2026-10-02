@@ -16,6 +16,6 @@ const ADMIN_PASSWORD = "5830";
 const BLOC13_EASTER_EGG = {
   name: "ALINA",
   sequence: "alina",
-  title: "DIE 13 GEHÖRT DER CHEFIN",
-  message: "Respekt für Alina — die Person, die den Block zusammenhält.",
+  title: "BLOC13 GEHÖRT Alina",
+  message: "Danke Alina für alles von der Ganzen Frak LG",
 };
