@@ -5,12 +5,14 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 const CATEGORIES = [
-  { key: "arbeiter", label: "Arbeiter", icon: "👥" },
-  { key: "fraktionlager", label: "Fraktion-Lager", icon: "🏛️" },
-  { key: "routenorte", label: "Routen-Orte", icon: "📍" },
+  { key: "arbeiter", label: "Mitglieder", icon: "👥" },
+  { key: "fraktionlager", label: "Crew & Lager", icon: "🏚️" },
+  { key: "routenorte", label: "Straßen & Orte", icon: "📍" },
   { key: "routenrechner", label: "Routen-Rechner", icon: "🧭" },
-  { key: "waffenshop", label: "Waffen-Shop", icon: "🛡️" },
+  { key: "waffenshop", label: "Ausrüstung", icon: "🎒" },
   { key: "wirtschaft", label: "Wirtschaft", icon: "💼" },
+  { key: "sanktionen", label: "Sanktionen", icon: "⚠️" },
+  { key: "allgemeineinfos", label: "Allgemeine Infos", icon: "📌" },
 ];
 
 const ROUTE_CALCULATORS = [
@@ -127,11 +129,11 @@ function showScreen(name) {
 /* ---------------- LOGIN / REGISTER ---------------- */
 $("go-register").onclick = () => {
   hide("form-login"); show("form-register");
-  $("login-subtitle").textContent = "📝 Zugang zur Prüfung einreichen";
+  $("login-subtitle").textContent = "📝 Aufnahme in den Block beantragen";
 };
 $("go-login").onclick = () => {
   hide("form-register"); show("form-login");
-  $("login-subtitle").textContent = "🔒 Geschützter Zugang für Mitglieder";
+  $("login-subtitle").textContent = "🔒 Internes Crew-Panel";
 };
 
 $("form-login").onsubmit = async (e) => {
@@ -740,6 +742,27 @@ function logActivity(action, detail = "", actor = currentUser || "Führung") {
 function notice(message, isError = false) {
   const toast = $("app-toast"); toast.textContent = message; toast.classList.toggle("error", isError); toast.classList.add("show");
   clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove("show"), 5000);
+}
+
+/* ---------------- Alina's hidden BLOC13 signal ---------------- */
+const bloc13Egg = typeof BLOC13_EASTER_EGG !== "undefined" ? BLOC13_EASTER_EGG : null;
+let eggKeys = "";
+function openBloc13Egg() {
+  if (!bloc13Egg) return;
+  $("alina-easter-title").textContent = bloc13Egg.title;
+  $("alina-easter-message").textContent = bloc13Egg.message;
+  show("alina-easter-egg");
+}
+if (bloc13Egg) {
+  document.addEventListener("keydown", (event) => {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.target.matches("input, textarea")) return;
+    if (event.key.length !== 1) return;
+    const sequence = String(bloc13Egg.sequence || "alina").toLowerCase();
+    eggKeys = (eggKeys + event.key.toLowerCase()).slice(-sequence.length);
+    if (eggKeys === sequence) { eggKeys = ""; openBloc13Egg(); }
+  });
+  $("alina-easter-close").onclick = () => hide("alina-easter-egg");
+  $("alina-easter-egg").onclick = (event) => { if (event.target === $("alina-easter-egg")) hide("alina-easter-egg"); };
 }
 
 /* ---------------- boot ---------------- */
