@@ -5,11 +5,11 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 const CATEGORIES = [
-  { key: "arbeiter", label: "Mitglieder", icon: "👥" },
-  { key: "fraktionlager", label: "Crew & Lager", icon: "🏚️" },
-  { key: "routenorte", label: "Straßen & Orte", icon: "📍" },
+  { key: "arbeiter", label: "Arbeiter", icon: "👥" },
+  { key: "fraktionlager", label: "Fraktions-Lager", icon: "🏚️" },
+  { key: "routenorte", label: "Routen-Orte", icon: "📍" },
   { key: "routenrechner", label: "Routen-Rechner", icon: "🧭" },
-  { key: "waffenshop", label: "Ausrüstung", icon: "🎒" },
+  { key: "waffenshop", label: "Waffen-Shop", icon: "🎒" },
   { key: "wirtschaft", label: "Wirtschaft", icon: "💼" },
   { key: "sanktionen", label: "Sanktionen", icon: "⚠️" },
   { key: "allgemeineinfos", label: "Allgemeine Infos", icon: "📌" },
