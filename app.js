@@ -5,11 +5,11 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 const CATEGORIES = [
-  { key: "arbeiter", label: "Arbeiter", icon: "👥" },
-  { key: "fraktionlager", label: "Fraklager", icon: "🏚️" },
-  { key: "routenorte", label: "Routen-Orte", icon: "📍" },
+  { key: "arbeiter", label: "Mitglieder", icon: "👥" },
+  { key: "fraktionlager", label: "Crew & Lager", icon: "🏚️" },
+  { key: "routenorte", label: "Straßen & Orte", icon: "📍" },
   { key: "routenrechner", label: "Routen-Rechner", icon: "🧭" },
-  { key: "waffenshop", label: "Waffen-Shop", icon: "🎒" },
+  { key: "waffenshop", label: "Ausrüstung", icon: "🎒" },
   { key: "wirtschaft", label: "Wirtschaft", icon: "💼" },
   { key: "sanktionen", label: "Sanktionen", icon: "⚠️" },
   { key: "allgemeineinfos", label: "Allgemeine Infos", icon: "📌" },
@@ -745,7 +745,10 @@ function notice(message, isError = false) {
 }
 
 /* ---------------- Alina's hidden BLOC13 signal ---------------- */
-const bloc13Egg = typeof BLOC13_EASTER_EGG !== "undefined" ? BLOC13_EASTER_EGG : null;
+const bloc13Egg = typeof BLOC13_EASTER_EGG !== "undefined" ? BLOC13_EASTER_EGG : {
+  name: "ALINA", sequence: "alina", title: "DIE 13 GEHÖRT DER CHEFIN",
+  message: "Respekt für Alina — die Person, die den Block zusammenhält.",
+};
 let eggKeys = "";
 function openBloc13Egg() {
   if (!bloc13Egg) return;
@@ -763,6 +766,14 @@ if (bloc13Egg) {
   });
   $("alina-easter-close").onclick = () => hide("alina-easter-egg");
   $("alina-easter-egg").onclick = (event) => { if (event.target === $("alina-easter-egg")) hide("alina-easter-egg"); };
+  let skullClicks = 0;
+  let skullClickTimer = null;
+  $("bloc-easter-trigger").onclick = () => {
+    skullClicks += 1;
+    clearTimeout(skullClickTimer);
+    skullClickTimer = setTimeout(() => { skullClicks = 0; }, 1300);
+    if (skullClicks === 3) { skullClicks = 0; openBloc13Egg(); }
+  };
 }
 
 /* ---------------- boot ---------------- */
