@@ -31,6 +31,7 @@
   .login-card{max-width:440px!important;padding:34px 32px!important;position:relative;overflow:hidden;}
   .login-card::before{content:"";position:absolute;top:0;left:50%;width:160px;height:1px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,var(--gold-bright),transparent);}
   .brand-crown{height:39px;line-height:1;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 3px 10px rgba(227,27,47,.55));}
+  #bloc-easter-trigger{cursor:pointer;}
   .bloc-skull{display:inline-flex;align-items:center;justify-content:center;color:#ef233c;text-shadow:0 0 16px rgba(239,35,60,.75);font-family:Arial,sans-serif;font-size:38px;line-height:1;}
   .bloc-skull-small{font-size:19px;text-shadow:none;}
   .brand-name{font-size:31px!important;letter-spacing:.13em;text-indent:.13em;text-shadow:0 2px 18px rgba(227,27,47,.38);}
@@ -221,7 +222,7 @@
 <div id="screen-login" class="centered-screen">
   <div class="card login-card">
     <div style="text-align:center;margin-bottom:26px;">
-      <div class="brand-crown"><span class="bloc-skull" aria-label="BLOC13">☠</span></div>
+      <div class="brand-crown" id="bloc-easter-trigger" title="BLOC13"><span class="bloc-skull" aria-label="BLOC13">☠</span></div>
       <div class="cinzel brand-name" style="color:var(--gold-bright);">BLOC13</div>
       <div class="brand-kicker">STREET NETWORK</div>
       <div class="brand-rule">RESPEKT · ZUSAMMENHALT · LOYALITÄT</div>
